@@ -1,4 +1,4 @@
-// Simple2D.js — v0.1.0, built 03-01-2017
+// Simple2D.js — v0.1.0 @ fc0c0e1, built 04-01-2017
 
 // start.js - Open the anonymous function defining the Simple 2D module
 
@@ -401,9 +401,11 @@ S2D.CreateText = function(font, msg, size) {
   // Create image object
   var txt   = Object.create(S2D.Text);
   txt.color = Object.create(S2D.Color);
-  txt.font  = font;
+  txt.font  = font ? font : null;
   txt.msg   = msg;
   txt.size  = size;
+  
+  S2D.SetText(txt, txt.msg);
   
   return txt;
 };
@@ -415,7 +417,7 @@ S2D.CreateText = function(font, msg, size) {
 S2D.SetText = function(txt, msg) {
   if (msg == "") return;  // no need to create a texture
   
-  S2D.GL.FreeTexture(txt.texture);
+  if (txt.texture) S2D.GL.FreeTexture(txt.texture);
   
   // Create a canvas element to make a texture
   var ctx = document.createElement("canvas").getContext("2d");
@@ -449,11 +451,7 @@ S2D.SetText = function(txt, msg) {
  */
 S2D.DrawText = function(txt) {
   if (!txt) return;
-  
-  if (!txt.texture) {
-    S2D.SetText(txt, txt.msg);
-  }
-  
+  if (!txt.texture) S2D.SetText(txt, txt.msg);
   S2D.GL.DrawText(txt);
 };
 
@@ -1012,6 +1010,7 @@ S2D.GL.Clear = function(clr) {
  * Creates a texture for rendering
  */
 S2D.GL.CreateTexture = function(data) {
+  if (!gl) return;
   
   var texture = gl.createTexture();
   
