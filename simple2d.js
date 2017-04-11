@@ -1,4 +1,4 @@
-// Simple2D.js — v0.1.0 @ fc0c0e1, built 04-01-2017
+// Simple2D.js — v0.1.0 @ f1dce8e, built 04-10-2017
 
 // start.js - Open the anonymous function defining the Simple 2D module
 
@@ -21,15 +21,41 @@
 // Simple 2D OpenGL namespace
 S2D.GL = {};
 
-// Simple 2D definitions
-Object.defineProperty(S2D, "KEYDOWN", { value: 1 });
-Object.defineProperty(S2D, "KEY",     { value: 2 });
-Object.defineProperty(S2D, "KEYUP",   { value: 3 });
-
 // Viewport scaling modes
 Object.defineProperty(S2D, "FIXED",   { value: 1 });
 Object.defineProperty(S2D, "SCALE",   { value: 2 });
 Object.defineProperty(S2D, "STRETCH", { value: 3 });
+
+// Keyboard events
+Object.defineProperty(S2D, "KEY_DOWN", { value: 1 });
+Object.defineProperty(S2D, "KEY_HELD", { value: 2 });
+Object.defineProperty(S2D, "KEY_UP",   { value: 3 });
+
+// Mouse events
+Object.defineProperty(S2D, "MOUSE_DOWN",   { value: 1 });
+Object.defineProperty(S2D, "MOUSE_UP",     { value: 2 });
+Object.defineProperty(S2D, "MOUSE_SCROLL", { value: 3 });
+Object.defineProperty(S2D, "MOUSE_MOVE",   { value: 4 });
+Object.defineProperty(S2D, "MOUSE_LEFT",   { value: 5 });
+Object.defineProperty(S2D, "MOUSE_MIDDLE", { value: 6 });
+Object.defineProperty(S2D, "MOUSE_RIGHT",  { value: 7 });
+Object.defineProperty(S2D, "MOUSE_X1",     { value: 8 });
+Object.defineProperty(S2D, "MOUSE_X2",     { value: 9 });
+Object.defineProperty(S2D, "MOUSE_SCROLL_NORMAL",   { value: 10 });
+Object.defineProperty(S2D, "MOUSE_SCROLL_INVERTED", { value: 11 });
+
+// Event
+S2D.Event = {
+  which: null,
+  type: null,
+  button: null,
+  key: null,
+  x: 0,
+  y: 0,
+  delta_x: 0,
+  delta_y: 0,
+  direction: null
+};
 
 // Color
 S2D.Color = {
@@ -56,7 +82,9 @@ S2D.Window = {
   render: null,
   mouse: {
     x: 0,
-    y: 0
+    y: 0,
+    last_x: 0,
+    last_y: 0
   },
   on_key: null,
   on_mouse: null,
@@ -231,6 +259,74 @@ S2D.TrimCanvas = function(c) {
   // open new window with trimmed image:
   return copy.canvas;
 };
+
+// Creates a global "addWheelListener" method
+// example: addWheelListener(el, function(e) { console.log(e.deltaY); e.preventDefault(); });
+// Adapted from: https://developer.mozilla.org/en-US/docs/Web/Events/wheel
+(function(window, document) {
+  
+  var prefix = "",
+    _addEventListener, support;
+  
+  // detect event model
+  if (window.addEventListener) {
+    _addEventListener = "addEventListener";
+  } else {
+    _addEventListener = "attachEvent";
+    prefix = "on";
+  }
+  
+  // detect available wheel event
+  support = "onwheel" in document.createElement("div") ? "wheel" : // Modern browsers support "wheel"
+    document.onmousewheel !== undefined ? "mousewheel" : // Webkit and IE support at least "mousewheel"
+    "DOMMouseScroll"; // let's assume that remaining browsers are older Firefox
+  
+  window.addWheelListener = function(elem, callback, useCapture) {
+    _addWheelListener(elem, support, callback, useCapture);
+    
+    // handle MozMousePixelScroll in older Firefox
+    if (support == "DOMMouseScroll") {
+      _addWheelListener(elem, "MozMousePixelScroll", callback, useCapture);
+    }
+  };
+  
+  function _addWheelListener(elem, eventName, callback, useCapture) {
+    elem[_addEventListener](prefix + eventName, support == "wheel" ? callback : function(originalEvent) {
+      !originalEvent && (originalEvent = window.event);
+      
+      // create a normalized event object
+      var event = {
+        // keep a ref to the original event object
+        originalEvent: originalEvent,
+        target: originalEvent.target || originalEvent.srcElement,
+        type: "wheel",
+        deltaMode: originalEvent.type == "MozMousePixelScroll" ? 0 : 1,
+        deltaX: 0,
+        deltaY: 0,
+        deltaZ: 0,
+        preventDefault: function() {
+          originalEvent.preventDefault ?
+            originalEvent.preventDefault() :
+            originalEvent.returnValue = false;
+        }
+      };
+      
+      // calculate deltaY (and deltaX) according to the event
+      if (support == "mousewheel") {
+        event.deltaY = -1 / 40 * originalEvent.wheelDelta;
+        // Webkit also support wheelDeltaX
+        originalEvent.wheelDeltaX && (event.deltaX = -1 / 40 * originalEvent.wheelDeltaX);
+      } else {
+        event.deltaY = originalEvent.detail;
+      }
+      
+      // it's time to fire the callback
+      return callback(event);
+      
+    }, useCapture || false);
+  }
+  
+})(window, document);
 
 
 // shapes.js
@@ -597,6 +693,25 @@ S2D.GetMouseOnViewport = function(win, wx, wy) {
 };
 
 
+/*
+ * Get the mouse button name from its code
+ */
+S2D.GetMouseButtonName = function(code) {
+  switch (code) {
+    case 0:
+      return S2D.MOUSE_LEFT;
+    case 1:
+      return S2D.MOUSE_MIDDLE;
+    case 2:
+      return S2D.MOUSE_RIGHT;
+    case 3:
+      return S2D.MOUSE_X1;
+    case 4:
+      return S2D.MOUSE_X2;
+  }
+};
+
+
 // window.js
 
 /*
@@ -650,6 +765,9 @@ S2D.Show = function(win) {
   
   win.canvas = el;
   
+  // Prevent right clicking in canvas
+  win.canvas.addEventListener("contextmenu", function(e) { e.preventDefault(); });
+  
   // Detect and set up canvas for high DPI
   
   win.canvas.style.width  = win.width  + "px";
@@ -668,19 +786,27 @@ S2D.Show = function(win) {
   S2D.GL.Init(win);
   
   S2D.onkeydown = function(e) {
-    var key = S2D.GetKey(e.keyCode);
-    if (!S2D.keys_down.includes(key)) {
-      S2D.keys_down.push(key);
-      if (win.on_key) win.on_key(S2D.KEYDOWN, key);
+    if (win.on_key) {
+      var key = S2D.GetKey(e.keyCode);
+      if (!S2D.keys_down.includes(key)) {
+        S2D.keys_down.push(key);
+          var event = Object.create(S2D.Event);
+          event.type = S2D.KEY_DOWN; event.key = key;
+          win.on_key(event);
+      }
     }
   };
   document.addEventListener("keydown", S2D.onkeydown);
   
   S2D.onkeyup = function(e) {
-    var key = S2D.GetKey(e.keyCode);
-    var i = S2D.keys_down.indexOf(key);
-    if (i > -1) S2D.keys_down.splice(i, 1);
-    if (win.on_key) win.on_key(S2D.KEYUP, key);
+    if (win.on_key) {
+      var key = S2D.GetKey(e.keyCode);
+      var i = S2D.keys_down.indexOf(key);
+      if (i > -1) S2D.keys_down.splice(i, 1);
+      var event = Object.create(S2D.Event);
+      event.type = S2D.KEY_UP; event.key = key;
+      win.on_key(event);
+    }
   };
   document.addEventListener("keyup", S2D.onkeyup);
   
@@ -694,22 +820,65 @@ S2D.Show = function(win) {
   });
   
   S2D.onmousedown = function(e) {
-    var x = e.pageX - win.canvas.offsetLeft;
-    var y = e.pageY - win.canvas.offsetTop;
-    var o = S2D.GetMouseOnViewport(win, x, y);
-    if (win.on_mouse) win.on_mouse(o.x, o.y);
+    if (win.on_mouse) {
+      var o = S2D.GetMouseOnViewport(win,
+        e.pageX - win.canvas.offsetLeft, e.pageY - win.canvas.offsetTop
+      );
+      var event = Object.create(S2D.Event);
+      event.type = S2D.MOUSE_DOWN;
+      event.button = S2D.GetMouseButtonName(e.button);
+      event.x = o.x; event.y = o.y;
+      win.on_mouse(event);
+    }
   };
   document.addEventListener("mousedown", S2D.onmousedown);
   
-  // Get and store mouse position
+  S2D.onmouseup = function(e) {
+    if (win.on_mouse) {
+      var o = S2D.GetMouseOnViewport(win,
+        e.pageX - win.canvas.offsetLeft, e.pageY - win.canvas.offsetTop
+      );
+      var event = Object.create(S2D.Event);
+      event.type = S2D.MOUSE_UP;
+      event.button = S2D.GetMouseButtonName(e.button);
+      event.x = o.x; event.y = o.y;
+      win.on_mouse(event);
+    }
+  };
+  document.addEventListener("mouseup", S2D.onmouseup);
+  
+  // Get and store mouse position, call mouse move
   S2D.onmousemove = function(e) {
-    var x = e.pageX - win.canvas.offsetLeft;
-    var y = e.pageY - win.canvas.offsetTop;
-    var o = S2D.GetMouseOnViewport(win, x, y);
+    var o = S2D.GetMouseOnViewport(win,
+      e.pageX - win.canvas.offsetLeft, e.pageY - win.canvas.offsetTop
+    );
     win.mouse.x = o.x;
     win.mouse.y = o.y;
+    if (win.on_mouse) {
+      var event = Object.create(S2D.Event);
+      event.type = S2D.MOUSE_MOVE;
+      event.x = o.x; event.y = o.y;
+      event.delta_x = o.x - win.mouse.last_x; event.delta_y = o.y - win.mouse.last_y;
+      win.on_mouse(event);
+      win.mouse.last_x = o.x; win.mouse.last_y = o.y;
+    }
   };
   document.addEventListener("mousemove", S2D.onmousemove);
+  
+  // Get and store mouse wheel scrolling
+  S2D.onmousewheel = function(e) {
+    if (win.on_mouse) {
+      var event = Object.create(S2D.Event);
+      event.type = S2D.MOUSE_SCROLL;
+      event.direction = e.webkitDirectionInvertedFromDevice ?
+        S2D.MOUSE_SCROLL_INVERTED : S2D.MOUSE_SCROLL_NORMAL;
+      event.delta_x = e.deltaX;
+      event.delta_y = e.deltaY;
+      win.on_mouse(event);
+    }
+    e.preventDefault();
+  };
+  window.addWheelListener(document, S2D.onmousewheel);
   
   // Main loop
   
@@ -737,7 +906,11 @@ S2D.Show = function(win) {
     
     // Detect keys held down
     S2D.keys_down.forEach(function(key) {
-      if (win.on_key) win.on_key(S2D.KEY, key);
+      if (win.on_key) {
+        var event = Object.create(S2D.Event);
+        event.type = S2D.KEY_HELD; event.key = key;
+        win.on_key(event);
+      }
     });
     
     if (win.update) win.update();
