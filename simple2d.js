@@ -1,4 +1,4 @@
-// Simple2D.js — v0.1.0 @ f1dce8e, built 04-10-2017
+// Simple2D.js — v0.1.0 @ e64479e, built 05-19-2017
 
 // start.js - Open the anonymous function defining the Simple 2D module
 
@@ -366,6 +366,29 @@ S2D.DrawQuad = function(x1,  y1,
 };
 
 
+/*
+ * Draw a line from a quad
+ */
+S2D.DrawLine = function(x1,  y1,  x2,  y2,
+                        width,
+                        c1r, c1g, c1b, c1a,
+                        c2r, c2g, c2b, c2a,
+                        c3r, c3g, c3b, c3a,
+                        c4r, c4g, c4b, c4a) {
+  
+  var length = Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
+  var x = ((x2 - x1) / length) * width / 2;
+  var y = ((y2 - y1) / length) * width / 2;
+  
+  S2D.DrawQuad(
+    x1 - y, y1 + x, c1r, c1g, c1b, c1a,
+    x1 + y, y1 - x, c2r, c2g, c2b, c2a,
+    x2 + y, y2 - x, c3r, c3g, c3b, c3a,
+    x2 - y, y2 + x, c4r, c4g, c4b, c4a
+  );
+};
+
+
 // image.js
 
 /*
@@ -508,8 +531,8 @@ S2D.CreateText = function(font, msg, size) {
 
 
 /*
-* Sets the text message
-*/
+ * Sets the text message
+ */
 S2D.SetText = function(txt, msg) {
   if (msg == "") return;  // no need to create a texture
   
