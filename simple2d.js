@@ -1,18 +1,18 @@
-// Simple2D.js — v0.1.0 @ e64479e, built 05-19-2017
+// Simple2D.js — v0.2.0, built 06-04-2017
 
 // start.js - Open the anonymous function defining the Simple 2D module
 
 (function(undefined) {
-  
+
   // Check if Simple 2D is already loaded
   if (typeof(this.S2D) !== 'undefined') {
     console.warn("Simple 2D already loaded! Loading twice may cause problems.");
     return this.S2D;
   }
-  
+
   // Create the Simple 2D module
   var S2D = this.S2D = {};
-  
+
   // ... Simple 2D library starts here ...
 
 
@@ -111,10 +111,13 @@ S2D.Image = {
 // Sprite
 S2D.Sprite = {
   img: null,
+  color: null,
   x: 0,
   y: 0,
   width: null,
   height: null,
+  clip_width: null,
+  clip_height: null,
   tx1: null,
   ty1: null,
   tx2: null,
@@ -158,27 +161,27 @@ S2D.keys_down = [];
 // On keyboard starting at top row, left to right
 S2D.key_map = {
   27: "Escape",
-  
+
   192: "`",
   189: "-",
   187: "=",
   8:   "Backspace",
-  
+
   9:   "Tab",
   219: "[",
   221: "]",
   220: "\\",
-  
+
   20:  "CapsLock",
   186: ";",
   222: "'",
   13:  "Return",
-  
+
   16:  "Shift",
   188: ",",
   190: ".",
   191: "/",
-  
+
   17:  "Ctrl",
   18:  "Option",
   91:  "Left Command",
@@ -218,28 +221,28 @@ S2D.TrimCanvas = function(c) {
       bottom: null
     },
     x, y;
-  
+
   for (i = 0; i < l; i += 4) {
     if (pixels.data[i+3] !== 0) {
       x = (i / 4) % c.width;
       y = ~~((i / 4) / c.width);
-      
+
       if (bound.top === null) {
         bound.top = y;
       }
-      
+
       if (bound.left === null) {
         bound.left = x;
       } else if (x < bound.left) {
         bound.left = x;
       }
-      
+
       if (bound.right === null) {
         bound.right = x;
       } else if (bound.right < x) {
         bound.right = x;
       }
-      
+
       if (bound.bottom === null) {
         bound.bottom = y;
       } else if (bound.bottom < y) {
@@ -247,15 +250,15 @@ S2D.TrimCanvas = function(c) {
       }
     }
   }
-  
+
   var trimHeight = bound.bottom - bound.top,
       trimWidth = bound.right - bound.left,
       trimmed = ctx.getImageData(bound.left, bound.top, trimWidth, trimHeight);
-  
+
   copy.canvas.width = trimWidth;
   copy.canvas.height = trimHeight;
   copy.putImageData(trimmed, 0, 0);
-  
+
   // open new window with trimmed image:
   return copy.canvas;
 };
@@ -264,10 +267,10 @@ S2D.TrimCanvas = function(c) {
 // example: addWheelListener(el, function(e) { console.log(e.deltaY); e.preventDefault(); });
 // Adapted from: https://developer.mozilla.org/en-US/docs/Web/Events/wheel
 (function(window, document) {
-  
+
   var prefix = "",
     _addEventListener, support;
-  
+
   // detect event model
   if (window.addEventListener) {
     _addEventListener = "addEventListener";
@@ -275,25 +278,25 @@ S2D.TrimCanvas = function(c) {
     _addEventListener = "attachEvent";
     prefix = "on";
   }
-  
+
   // detect available wheel event
   support = "onwheel" in document.createElement("div") ? "wheel" : // Modern browsers support "wheel"
     document.onmousewheel !== undefined ? "mousewheel" : // Webkit and IE support at least "mousewheel"
     "DOMMouseScroll"; // let's assume that remaining browsers are older Firefox
-  
+
   window.addWheelListener = function(elem, callback, useCapture) {
     _addWheelListener(elem, support, callback, useCapture);
-    
+
     // handle MozMousePixelScroll in older Firefox
     if (support == "DOMMouseScroll") {
       _addWheelListener(elem, "MozMousePixelScroll", callback, useCapture);
     }
   };
-  
+
   function _addWheelListener(elem, eventName, callback, useCapture) {
     elem[_addEventListener](prefix + eventName, support == "wheel" ? callback : function(originalEvent) {
       !originalEvent && (originalEvent = window.event);
-      
+
       // create a normalized event object
       var event = {
         // keep a ref to the original event object
@@ -310,7 +313,7 @@ S2D.TrimCanvas = function(c) {
             originalEvent.returnValue = false;
         }
       };
-      
+
       // calculate deltaY (and deltaX) according to the event
       if (support == "mousewheel") {
         event.deltaY = -1 / 40 * originalEvent.wheelDelta;
@@ -319,13 +322,13 @@ S2D.TrimCanvas = function(c) {
       } else {
         event.deltaY = originalEvent.detail;
       }
-      
+
       // it's time to fire the callback
       return callback(event);
-      
+
     }, useCapture || false);
   }
-  
+
 })(window, document);
 
 
@@ -334,35 +337,31 @@ S2D.TrimCanvas = function(c) {
 /*
  * Draw a triangle
  */
-S2D.DrawTriangle = function(x1, y1, c1r, c1g, c1b, c1a,
-                            x2, y2, c2r, c2g, c2b, c2a,
-                            x3, y3, c3r, c3g, c3b, c3a) {
-  
-  S2D.GL.DrawTriangle(x1, y1, c1r, c1g, c1b, c1a,
-                      x2, y2, c2r, c2g, c2b, c2a,
-                      x3, y3, c3r, c3g, c3b, c3a);
+S2D.DrawTriangle = function(x1, y1, r1, g1, b1, a1,
+                            x2, y2, r2, g2, b2, a2,
+                            x3, y3, r3, g3, b3, a3) {
+
+  S2D.GL.DrawTriangle(x1, y1, r1, g1, b1, a1,
+                      x2, y2, r2, g2, b2, a2,
+                      x3, y3, r3, g3, b3, a3);
 };
 
 
 /*
  * Draw a quad, using two triangles
  */
-S2D.DrawQuad = function(x1,  y1,
-                        c1r, c1g, c1b, c1a,
-                        x2,  y2,
-                        c2r, c2g, c2b, c2a,
-                        x3,  y3,
-                        c3r, c3g, c3b, c3a,
-                        x4,  y4,
-                        c4r, c4g, c4b, c4a) {
-  
-  S2D.GL.DrawTriangle(x1, y1, c1r, c1g, c1b, c1a,
-                      x2, y2, c2r, c2g, c2b, c2a,
-                      x3, y3, c3r, c3g, c3b, c3a);
-  
-  S2D.GL.DrawTriangle(x3, y3, c3r, c3g, c3b, c3a,
-                      x4, y4, c4r, c4g, c4b, c4a,
-                      x1, y1, c1r, c1g, c1b, c1a);
+S2D.DrawQuad = function(x1, y1, r1, g1, b1, a1,
+                        x2, y2, r2, g2, b2, a2,
+                        x3, y3, r3, g3, b3, a3,
+                        x4, y4, r4, g4, b4, a4) {
+
+  S2D.GL.DrawTriangle(x1, y1, r1, g1, b1, a1,
+                      x2, y2, r2, g2, b2, a2,
+                      x3, y3, r3, g3, b3, a3);
+
+  S2D.GL.DrawTriangle(x3, y3, r3, g3, b3, a3,
+                      x4, y4, r4, g4, b4, a4,
+                      x1, y1, r1, g1, b1, a1);
 };
 
 
@@ -371,20 +370,20 @@ S2D.DrawQuad = function(x1,  y1,
  */
 S2D.DrawLine = function(x1,  y1,  x2,  y2,
                         width,
-                        c1r, c1g, c1b, c1a,
-                        c2r, c2g, c2b, c2a,
-                        c3r, c3g, c3b, c3a,
-                        c4r, c4g, c4b, c4a) {
-  
+                        r1, g1, b1, a1,
+                        r2, g2, b2, a2,
+                        r3, g3, b3, a3,
+                        r4, g4, b4, a4) {
+
   var length = Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
   var x = ((x2 - x1) / length) * width / 2;
   var y = ((y2 - y1) / length) * width / 2;
-  
+
   S2D.DrawQuad(
-    x1 - y, y1 + x, c1r, c1g, c1b, c1a,
-    x1 + y, y1 - x, c2r, c2g, c2b, c2a,
-    x2 + y, y2 - x, c3r, c3g, c3b, c3a,
-    x2 - y, y2 + x, c4r, c4g, c4b, c4a
+    x1 - y, y1 + x, r1, g1, b1, a1,
+    x1 + y, y1 - x, r2, g2, b2, a2,
+    x2 + y, y2 - x, r3, g3, b3, a3,
+    x2 - y, y2 + x, r4, g4, b4, a4
   );
 };
 
@@ -396,24 +395,24 @@ S2D.DrawLine = function(x1,  y1,  x2,  y2,
  * Params: path = image file path
  */
 S2D.CreateImage = function(path, loadedCallback) {
-  
+
   // TODO: Check if image file exists
-  
+
   // Create image object
   var img = Object.create(S2D.Image);
   img.data = new Image();
   img.color = Object.create(S2D.Color);
-  
+
   img.data.onload = function() {
     img.texture = S2D.GL.CreateTexture(this);
-    if (!img.width)  img.width  = this.width;
+    if (!img.width ) img.width  = this.width;
     if (!img.height) img.height = this.height;
     if (loadedCallback) loadedCallback();
   };
-  
+
   // Causes image to be loaded
   img.data.src = path;
-  
+
   return img;
 };
 
@@ -433,15 +432,18 @@ S2D.DrawImage = function(img) {
  * Create a sprite, given an image file path
  */
 S2D.CreateSprite = function(path) {
-  
+
   // TODO: Check if sprite image file exists
-  
+
   var spr = Object.create(S2D.Sprite);
+  spr.color = Object.create(S2D.Color);
   spr.img = S2D.CreateImage(path, function() {
-    spr.width  = spr.img.width;
-    spr.height = spr.img.height;
+    if (!spr.width ) spr.width  = spr.img.width;
+    if (!spr.height) spr.height = spr.img.height;
+    spr.clip_width  = spr.img.width;
+    spr.clip_height = spr.img.height;
   });
-  
+
   spr.tx1 = 0.0;
   spr.ty1 = 0.0;
   spr.tx2 = 1.0;
@@ -450,7 +452,7 @@ S2D.CreateSprite = function(path) {
   spr.ty3 = 1.0;
   spr.tx4 = 0.0;
   spr.ty4 = 1.0;
-  
+
   return spr;
 };
 
@@ -460,44 +462,46 @@ S2D.CreateSprite = function(path) {
  */
 S2D.ClipSprite = function(spr, x, y, w, h) {
   if (!spr) return;
-  
+
   // Calculate ratios
   // rw = ratio width; rh = ratio height
   var rw = w / spr.img.width;
   var rh = h / spr.img.height;
-  
+
   // Apply ratios to x, y coordinates
   // cx = crop x coord; cy = crop y coord
   var cx = x * rw;
   var cy = y * rh;
-  
+
   // Convert given width, height to doubles
   // cw = crop width; ch = crop height
   var cw = w;
   var ch = h;
-  
+
   // Apply ratio to texture width and height
   // tw = texture width; th = texture height
   var tw = rw * w;
   var th = rh * h;
-  
+
   // Calculate and store sprite texture values
-  
+
   spr.tx1 =  cx       / cw;
   spr.ty1 =  cy       / ch;
-  
+
   spr.tx2 = (cx + tw) / cw;
   spr.ty2 =  cy       / ch;
-  
+
   spr.tx3 = (cx + tw) / cw;
   spr.ty3 = (cy + th) / ch;
-  
+
   spr.tx4 =  cx       / cw;
   spr.ty4 = (cy + th) / ch;
-  
-  // Store the sprite width and height
-  spr.width  = w;
-  spr.height = h;
+
+  // Store the sprite dimensions
+  spr.width  = (spr.width  / spr.clip_width ) * w;
+  spr.height = (spr.height / spr.clip_height) * h;
+  spr.clip_width  = w;
+  spr.clip_height = h;
 };
 
 
@@ -516,16 +520,16 @@ S2D.DrawSprite = function(spr) {
  * Create text, given a font file path, the message, and size
  */
 S2D.CreateText = function(font, msg, size) {
-  
+
   // Create image object
   var txt   = Object.create(S2D.Text);
   txt.color = Object.create(S2D.Color);
   txt.font  = font ? font : null;
   txt.msg   = msg;
   txt.size  = size;
-  
+
   S2D.SetText(txt, txt.msg);
-  
+
   return txt;
 };
 
@@ -535,20 +539,20 @@ S2D.CreateText = function(font, msg, size) {
  */
 S2D.SetText = function(txt, msg) {
   if (msg == "") return;  // no need to create a texture
-  
+
   if (txt.texture) S2D.GL.FreeTexture(txt.texture);
-  
+
   // Create a canvas element to make a texture
   var ctx = document.createElement("canvas").getContext("2d");
-  
+
   // TODO: Width and height should probably be variable, based on
   // `ctx.measureText(msg).width` or something.
   var w = 1000;
   var h = 1000;
-  
+
   // Double size of font for high DPI
   var size = txt.size * 2;
-  
+
   // Set context attributes and draw text
   ctx.canvas.width  = w;
   ctx.canvas.height = h;
@@ -557,7 +561,7 @@ S2D.SetText = function(txt, msg) {
   ctx.textBaseline = "bottom";
   ctx.fillStyle = "white";
   ctx.fillText(msg, w, h);
-  
+
   txt.data    = S2D.TrimCanvas(ctx.canvas);  // trim the transparent pixels
   txt.texture = S2D.GL.CreateTexture(txt.data);
   txt.width   = txt.data.width  / 2;  // half size of texture for high DPI
@@ -581,12 +585,12 @@ S2D.DrawText = function(txt) {
  * Create a sound, given an audio file path
  */
 S2D.CreateSound = function(path) {
-  
+
   // TODO: Check if audio file exists
-  
+
   var sound = Object.create(S2D.Sound);
   sound.data = new Audio(path);
-  
+
   return sound;
 };
 
@@ -606,12 +610,12 @@ S2D.PlaySound = function(sound) {
  * Create the music, given an audio file path
  */
 S2D.CreateMusic = function(path) {
-  
+
   // TODO: Check if audio file exists
-  
+
   var music = Object.create(S2D.Music);
   music.data = new Audio(path);
-  
+
   return music;
 };
 
@@ -660,12 +664,12 @@ S2D.StopMusic = function() {
  */
 S2D.FadeOutMusic = function(ms) {
   if (!S2D.current_music) return;
-  
+
   if (S2D.current_music.paused) {
     S2D.StopMusic();
     return;
   }
-  
+
   var fadeAudio = setInterval(function () {
     if (S2D.current_music.volume >= 0.05) {
       S2D.current_music.volume -= 0.05;
@@ -674,7 +678,7 @@ S2D.FadeOutMusic = function(ms) {
       S2D.current_music.volume = 1.0;
       clearInterval(fadeAudio);
     }
-    
+
   }, ms / 20);
 };
 
@@ -685,30 +689,30 @@ S2D.FadeOutMusic = function(ms) {
  * Get the mouse coordinates relative to the viewport
  */
 S2D.GetMouseOnViewport = function(win, wx, wy) {
-  
+
   var scale;  // viewport scale factor
   var w, h;   // width and height of scaled viewport
   var x, y;   // mouse positions to be returned
-  
+
   switch (win.viewport.mode) {
-    
+
     case S2D.FIXED:
       x = wx / (win.orig_width  / win.viewport.width);
       y = wy / (win.orig_height / win.viewport.height);
       break;
-    
+
     case S2D.SCALE:
       var o = S2D.GL.GetViewportScale(win);
       x = wx * 1 / o.scale - (win.width  - o.w) / (2.0 * o.scale);
       y = wy * 1 / o.scale - (win.height - o.h) / (2.0 * o.scale);
       break;
-    
+
     case S2D.STRETCH:
       x = wx * win.viewport.width  / win.width;
       y = wy * win.viewport.height / win.height;
       break;
   }
-  
+
   return {
     x: x,
     y: y
@@ -741,9 +745,9 @@ S2D.GetMouseButtonName = function(code) {
  * Create a window
  */
 S2D.CreateWindow = function(title, width, height, update, render, element, opts) {
-  
+
   var win = Object.create(S2D.Window);
-  
+
   win.title  = title;
   win.width  = width;
   win.height = height;
@@ -759,14 +763,14 @@ S2D.CreateWindow = function(title, width, height, update, render, element, opts)
   win.background.g = 0;
   win.background.b = 0;
   win.background.a = 1;
-  
+
   // `element` can be an ID string (e.g. "#game") or an actual DOM element
   if (typeof(element) == 'string') {
     win.element = document.getElementById(element);
   } else {
     win.element = element;
   }
-  
+
   return win;
 };
 
@@ -775,39 +779,39 @@ S2D.CreateWindow = function(title, width, height, update, render, element, opts)
  * Show the window
  */
 S2D.Show = function(win) {
-  
+
   // Create the canvas element
-  
+
   var el = document.createElement('canvas');
   win.element.appendChild(el);
-  
+
   el.setAttribute('width',  win.width);
   el.setAttribute('height', win.height);
   el.innerHTML = "Your browser doesn't appear to support" +
                  "the <code>&lt;canvas&gt;</code> element.";
-  
+
   win.canvas = el;
-  
+
   // Prevent right clicking in canvas
   win.canvas.addEventListener("contextmenu", function(e) { e.preventDefault(); });
-  
+
   // Detect and set up canvas for high DPI
-  
+
   win.canvas.style.width  = win.width  + "px";
   win.canvas.style.height = win.height + "px";
-  
+
   var ratio = window.devicePixelRatio       ||
               window.webkitDevicePixelRatio ||
               window.mozDevicePixelRatio    ||
               window.opDevicePixelRatio     || 1;
-  
+
   win.canvas.width  = win.width  * devicePixelRatio;
   win.canvas.height = win.height * devicePixelRatio;
   win.pixel_ratio = ratio;
-  
+
   // Initialize WebGL
   S2D.GL.Init(win);
-  
+
   S2D.onkeydown = function(e) {
     if (win.on_key) {
       var key = S2D.GetKey(e.keyCode);
@@ -820,7 +824,7 @@ S2D.Show = function(win) {
     }
   };
   document.addEventListener("keydown", S2D.onkeydown);
-  
+
   S2D.onkeyup = function(e) {
     if (win.on_key) {
       var key = S2D.GetKey(e.keyCode);
@@ -832,7 +836,7 @@ S2D.Show = function(win) {
     }
   };
   document.addEventListener("keyup", S2D.onkeyup);
-  
+
   // Clear keys down list when focus is lost
   window.addEventListener("blur", function functionName() {
     var e = {};
@@ -841,7 +845,7 @@ S2D.Show = function(win) {
       S2D.onkeyup(e);
     });
   });
-  
+
   S2D.onmousedown = function(e) {
     if (win.on_mouse) {
       var o = S2D.GetMouseOnViewport(win,
@@ -855,7 +859,7 @@ S2D.Show = function(win) {
     }
   };
   document.addEventListener("mousedown", S2D.onmousedown);
-  
+
   S2D.onmouseup = function(e) {
     if (win.on_mouse) {
       var o = S2D.GetMouseOnViewport(win,
@@ -869,7 +873,7 @@ S2D.Show = function(win) {
     }
   };
   document.addEventListener("mouseup", S2D.onmouseup);
-  
+
   // Get and store mouse position, call mouse move
   S2D.onmousemove = function(e) {
     var o = S2D.GetMouseOnViewport(win,
@@ -887,7 +891,7 @@ S2D.Show = function(win) {
     }
   };
   document.addEventListener("mousemove", S2D.onmousemove);
-  
+
   // Get and store mouse wheel scrolling
   S2D.onmousewheel = function(e) {
     if (win.on_mouse) {
@@ -902,31 +906,31 @@ S2D.Show = function(win) {
     e.preventDefault();
   };
   window.addWheelListener(document, S2D.onmousewheel);
-  
+
   // Main loop
-  
+
   var req;  // the animation frame request
   var start_ms = new Date();
   var end_ms   = new Date();
   var elapsed_ms;
-  
+
   function mainLoop(win) {
-    
+
     if (win.close) {
       cancelAnimationFrame(req);
       return;
     }
-    
+
     S2D.GL.Clear(win.background);
-    
+
     // Update frame counter
     win.frames++;
-    
+
     // Calculate and store FPS
     end_ms = new Date();
     elapsed_ms = end_ms.getTime() - start_ms.getTime();
     win.fps = win.frames / (elapsed_ms / 1000.0);
-    
+
     // Detect keys held down
     S2D.keys_down.forEach(function(key) {
       if (win.on_key) {
@@ -935,13 +939,13 @@ S2D.Show = function(win) {
         win.on_key(event);
       }
     });
-    
+
     if (win.update) win.update();
     if (win.render) win.render();
-    
+
     requestAnimationFrame(function() { mainLoop(win); });
   }
-  
+
   req = requestAnimationFrame(function() { mainLoop(win); });
 };
 
@@ -983,7 +987,7 @@ var orthoMatrix = [
  * Initialize WebGL
  */
 S2D.GL.Init = function(win) {
-  
+
   // Initialize the GL context
   try {
     // Try to grab the standard context. If it fails, fallback to experimental.
@@ -991,13 +995,13 @@ S2D.GL.Init = function(win) {
   } catch(e) {
     console.log("GL error caught");
   }
-  
+
   // If we don't have a GL context, give up now
   if (!gl) {
     console.error("Unable to initialize WebGL. Your browser may not support it.");
     return null;
   }
-  
+
   S2D.GL.WebGLInit();
   S2D.GL.SetViewport(win);
 };
@@ -1007,11 +1011,11 @@ S2D.GL.Init = function(win) {
  * Initialize WebGL
  */
 S2D.GL.WebGLInit = function() {
-  
+
   // Enable transparency
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-  
+
   // Vertex shader source string
   var vertexSource = `
     uniform mat4 u_matrix;
@@ -1025,7 +1029,7 @@ S2D.GL.WebGLInit = function() {
       v_texcoord = a_texcoord;
       gl_Position = u_matrix * a_position;
     }`;
-  
+
   // Fragment shader source string
   var fragmentSource = `
     precision mediump float;
@@ -1033,7 +1037,7 @@ S2D.GL.WebGLInit = function() {
     void main(void) {
       gl_FragColor = v_color;
     }`;
-  
+
   // Fragment shader source string for textures
   var texFragmentSource = `
     precision mediump float;
@@ -1043,55 +1047,55 @@ S2D.GL.WebGLInit = function() {
     void main(void) {
       gl_FragColor = texture2D(s_texture, v_texcoord) * v_color;
     }`;
-  
+
   // Load the vertex and fragment shaders
   var vertexShader      = S2D.GL.LoadShader(  gl.VERTEX_SHADER,      vertexSource, "Vertex");
   var fragmentShader    = S2D.GL.LoadShader(gl.FRAGMENT_SHADER,    fragmentSource, "Fragment");
   var texFragmentShader = S2D.GL.LoadShader(gl.FRAGMENT_SHADER, texFragmentSource, "Texture Fragment");
-  
+
   // Triangle Shader //
-  
+
   // Create the texture shader program object
   shaderProgram = gl.createProgram();
-  
+
   // Attach the shader objects to the program object
   gl.attachShader(shaderProgram, vertexShader);
   gl.attachShader(shaderProgram, fragmentShader);
-  
+
   // Link the shader program
   gl.linkProgram(shaderProgram);
-  
+
   // Check if linked
   if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
     console.error("Unable to initialize the shader program.");
   }
-  
+
   // Get the attribute locations
   positionLocation = gl.getAttribLocation(shaderProgram, "a_position");
   colorLocation    = gl.getAttribLocation(shaderProgram, "a_color");
-  
+
   // Texture Shader //
-  
+
   // Create the texture shader program object
   texShaderProgram = gl.createProgram();
-  
+
   // Attach the shader objects to the program object
   gl.attachShader(texShaderProgram, vertexShader);
   gl.attachShader(texShaderProgram, texFragmentShader);
-  
+
   // Link the shader program
   gl.linkProgram(texShaderProgram);
-  
+
   // Check if linked
   if (!gl.getProgramParameter(texShaderProgram, gl.LINK_STATUS)) {
     console.error("Unable to initialize the texture shader program.");
   }
-  
+
   // Get the attribute locations
   texPositionLocation = gl.getAttribLocation(texShaderProgram, "a_position");
   texColorLocation    = gl.getAttribLocation(texShaderProgram, "a_color");
   texCoordLocation    = gl.getAttribLocation(texShaderProgram, "a_texcoord");
-  
+
   // Get the sampler location
   samplerLocation = gl.getUniformLocation(texShaderProgram, "s_texture");
 };
@@ -1101,17 +1105,17 @@ S2D.GL.WebGLInit = function() {
  * Creates a shader object, loads shader string, and compiles.
  */
 S2D.GL.LoadShader = function(type, shaderSrc, shaderName) {
-  
+
   var shader = gl.createShader(type);
-  
+
   gl.shaderSource(shader, shaderSrc);
   gl.compileShader(shader);
-  
+
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
     console.error("Error compiling shader \"" + shaderName + "\":\n" + gl.getShaderInfoLog(shader));
     return null;
   }
-  
+
   return shader;
 };
 
@@ -1120,15 +1124,15 @@ S2D.GL.LoadShader = function(type, shaderSrc, shaderName) {
  * Calculate the viewport's scaled width and height
  */
 S2D.GL.GetViewportScale = function(win) {
-  
+
   var s = Math.min(
     win.width  / win.viewport.width,
     win.height / win.viewport.height
   );
-  
+
   var w = win.viewport.width  * s;
   var h = win.viewport.height * s;
-  
+
   return {
     w: w,
     h: h,
@@ -1141,51 +1145,51 @@ S2D.GL.GetViewportScale = function(win) {
  * Sets the viewport and matrix projection
  */
 S2D.GL.SetViewport = function(win) {
-  
+
   var ortho_w = win.viewport.width;
   var ortho_h = win.viewport.height;
   var x, y, w, h;  // calculated GL viewport values
-  
+
   x = 0; y = 0; w = win.width; h = win.height;
-  
+
   switch (win.viewport.mode) {
-    
+
     case S2D.FIXED:
       w = win.orig_width;
       h = win.orig_height;
       y = win.height - h;
       break;
-    
+
     case S2D.SCALE:
       var o = S2D.GL.GetViewportScale(win);
       // Center the viewport
       x = win.width  / 2.0 - o.w/2.0;
       y = win.height / 2.0 - o.h/2.0;
       break;
-      
+
     case S2D.STRETCH:
       break;
   }
-  
+
   gl.viewport(
     x * win.pixel_ratio,
     y * win.pixel_ratio,
     w * win.pixel_ratio,
     h * win.pixel_ratio
   );
-  
+
   orthoMatrix[0] =  2.0 / ortho_w;
   orthoMatrix[5] = -2.0 / ortho_h;
-  
+
   gl.useProgram(shaderProgram);
-  
+
   gl.uniformMatrix4fv(
     gl.getUniformLocation(shaderProgram, "u_matrix"),
     false, new Float32Array(orthoMatrix)
   );
-  
+
   gl.useProgram(texShaderProgram);
-  
+
   gl.uniformMatrix4fv(
     gl.getUniformLocation(texShaderProgram, "u_matrix"),
     false, new Float32Array(orthoMatrix)
@@ -1207,24 +1211,24 @@ S2D.GL.Clear = function(clr) {
  */
 S2D.GL.CreateTexture = function(data) {
   if (!gl) return;
-  
+
   var texture = gl.createTexture();
-  
+
   // Bind the named texture to a texturing target
   gl.bindTexture(gl.TEXTURE_2D, texture);
-  
+
   // Specifies the 2D texture image
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, data);
-  
+
   // Set the filtering mode
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-  
+
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  
+
   gl.bindTexture(gl.TEXTURE_2D, null);
-  
+
   return texture;
 };
 
@@ -1240,38 +1244,38 @@ S2D.GL.FreeTexture = function(texture) {
 /*
  * Draw triangle
  */
-S2D.GL.DrawTriangle = function(x1, y1, c1r, c1g, c1b, c1a,
-                               x2, y2, c2r, c2g, c2b, c2a,
-                               x3, y3, c3r, c3g, c3b, c3a) {
-  
+S2D.GL.DrawTriangle = function(x1, y1, r1, g1, b1, a1,
+                               x2, y2, r2, g2, b2, a2,
+                               x3, y3, r3, g3, b3, a3) {
+
   var vertices = [
     x1, y1, 0.0,
     x2, y2, 0.0,
     x3, y3, 0.0
   ];
-  
+
   var colors = [
-    c1r, c1g, c1b, c1a,
-    c2r, c2g, c2b, c2a,
-    c3r, c3g, c3b, c3a
+    r1, g1, b1, a1,
+    r2, g2, b2, a2,
+    r3, g3, b3, a3
   ];
-  
+
   gl.useProgram(shaderProgram);
-  
+
   // Vertex
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-  
+
   gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(positionLocation);
-  
+
   // Colors
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-  
+
   gl.vertexAttribPointer(colorLocation, 4, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(colorLocation);
-  
+
   // Draw
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 };
@@ -1284,48 +1288,48 @@ S2D.GL.DrawTexture = function(x, y, w, h,
                               r, g, b, a,
                               tx1, ty1, tx2, ty2, tx3, ty3, tx4, ty4,
                               texture) {
-  
+
   var vertices =
   //  x, y coords      | x, y texture coords
     [ x,     y,     0.0, tx1, ty1,
       x + w, y,     0.0, tx2, ty2,
       x + w, y + h, 0.0, tx3, ty3,
       x,     y + h, 0.0, tx4, ty4 ];
-  
+
   var colors = [
     r, g, b, a,
     r, g, b, a,
     r, g, b, a,
     r, g, b, a
   ];
-  
+
   gl.useProgram(texShaderProgram);
-  
+
   // Vertex
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-  
+
   gl.vertexAttribPointer(texPositionLocation, 3, gl.FLOAT, false, 5*4, 0);
   gl.enableVertexAttribArray(texPositionLocation);
-  
+
   gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 5*4, 3*4);
   gl.enableVertexAttribArray(texCoordLocation);
-  
+
   // Colors
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-  
+
   gl.vertexAttribPointer(texColorLocation, 4, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(texColorLocation);
-  
+
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, texture);
-  
+
   gl.uniform1i(samplerLocation, 0);
-  
+
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer());
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
-  
+
   gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
 };
 
@@ -1349,7 +1353,7 @@ S2D.GL.DrawImage = function(img) {
 S2D.GL.DrawSprite = function(spr) {
   S2D.GL.DrawTexture(
     spr.x, spr.y, spr.width, spr.height,
-    spr.img.color.r, spr.img.color.g, spr.img.color.b, spr.img.color.a,
+    spr.color.r, spr.color.g, spr.color.b, spr.color.a,
     spr.tx1, spr.ty1, spr.tx2, spr.ty2, spr.tx3, spr.ty3, spr.tx4, spr.ty4,
     spr.img.texture
   );
