@@ -3,13 +3,14 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 48;
+	objectVersion = 51;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		E2206BB41F4AB3AC002BD456 /* Simple2D.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E2206BB31F4AB3AC002BD456 /* Simple2D.framework */; };
 		E228A73E1F16780900E03F68 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E228A73D1F16780900E03F68 /* Assets.xcassets */; };
 		E228A7461F1678F000E03F68 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = E228A7451F1678F000E03F68 /* main.c */; };
+		E2309DC022532AF60005CB0C /* MRuby.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E2309DBF22532AF60005CB0C /* MRuby.framework */; };
 		E25EF19A1F167AF90045EA1D /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E25EF1901F167AF90045EA1D /* AudioToolbox.framework */; };
 		E25EF19B1F167AF90045EA1D /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E25EF1911F167AF90045EA1D /* AVFoundation.framework */; };
 		E25EF19C1F167AF90045EA1D /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E25EF1921F167AF90045EA1D /* CoreGraphics.framework */; };
@@ -20,7 +21,6 @@
 		E25EF1A11F167AF90045EA1D /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E25EF1971F167AF90045EA1D /* OpenGLES.framework */; };
 		E25EF1A21F167AF90045EA1D /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E25EF1981F167AF90045EA1D /* QuartzCore.framework */; };
 		E25EF1A31F167AF90045EA1D /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E25EF1991F167AF90045EA1D /* UIKit.framework */; };
-		E2D0E9131F764B5E000AF870 /* MRuby.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E2D0E9121F764B5E000AF870 /* MRuby.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -29,6 +29,7 @@
 		E228A73D1F16780900E03F68 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E228A73F1F16780900E03F68 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		E228A7451F1678F000E03F68 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
+		E2309DBF22532AF60005CB0C /* MRuby.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = MRuby.framework; sourceTree = "<group>"; };
 		E25EF1901F167AF90045EA1D /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		E25EF1911F167AF90045EA1D /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		E25EF1921F167AF90045EA1D /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
@@ -39,7 +40,6 @@
 		E25EF1971F167AF90045EA1D /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGLES.framework; path = System/Library/Frameworks/OpenGLES.framework; sourceTree = SDKROOT; };
 		E25EF1981F167AF90045EA1D /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		E25EF1991F167AF90045EA1D /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
-		E2D0E9121F764B5E000AF870 /* MRuby.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = MRuby.framework; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -47,7 +47,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E2D0E9131F764B5E000AF870 /* MRuby.framework in Frameworks */,
+				E2309DC022532AF60005CB0C /* MRuby.framework in Frameworks */,
 				E2206BB41F4AB3AC002BD456 /* Simple2D.framework in Frameworks */,
 				E25EF19A1F167AF90045EA1D /* AudioToolbox.framework in Frameworks */,
 				E25EF19B1F167AF90045EA1D /* AVFoundation.framework in Frameworks */,
@@ -71,8 +71,8 @@
 				E228A7451F1678F000E03F68 /* main.c */,
 				E228A73D1F16780900E03F68 /* Assets.xcassets */,
 				E228A73F1F16780900E03F68 /* Info.plist */,
-				E228A72F1F16780900E03F68 /* Products */,
 				E25EF17D1F1679F30045EA1D /* Frameworks */,
+				E228A72F1F16780900E03F68 /* Products */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -90,7 +90,7 @@
 		E25EF17D1F1679F30045EA1D /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				E2D0E9121F764B5E000AF870 /* MRuby.framework */,
+				E2309DBF22532AF60005CB0C /* MRuby.framework */,
 				E2206BB31F4AB3AC002BD456 /* Simple2D.framework */,
 				E25EF1901F167AF90045EA1D /* AudioToolbox.framework */,
 				E25EF1911F167AF90045EA1D /* AVFoundation.framework */,
@@ -132,7 +132,7 @@
 		E228A7261F16780900E03F68 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0910;
+				LastUpgradeCheck = 1020;
 				TargetAttributes = {
 					E228A72D1F16780900E03F68 = {
 						CreatedOnToolsVersion = 8.3.3;
@@ -141,8 +141,8 @@
 				};
 			};
 			buildConfigurationList = E228A7291F16780900E03F68 /* Build configuration list for PBXProject "MyApp" */;
-			compatibilityVersion = "Xcode 8.0";
-			developmentRegion = English;
+			compatibilityVersion = "Xcode 10.0";
+			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
@@ -185,6 +185,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
@@ -195,17 +196,17 @@
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
-				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
@@ -227,11 +228,11 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = "\"$(SRCROOT)/MRuby.framework/Headers\"";
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = appletvos;
 				TARGETED_DEVICE_FAMILY = 3;
-				TVOS_DEPLOYMENT_TARGET = 11.1;
 			};
 			name = Debug;
 		};
@@ -239,6 +240,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
@@ -249,17 +251,17 @@
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
-				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
@@ -275,10 +277,10 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = "\"$(SRCROOT)/MRuby.framework/Headers\"";
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = appletvos;
 				TARGETED_DEVICE_FAMILY = 3;
-				TVOS_DEPLOYMENT_TARGET = 11.1;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
@@ -292,9 +294,11 @@
 					/usr/local/Frameworks/Simple2D/tvOS,
 					"$(PROJECT_DIR)",
 				);
-				HEADER_SEARCH_PATHS = "\"$(SRCROOT)/MRuby.framework/Headers\"";
 				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = Ruby2D.MyApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -309,9 +313,11 @@
 					/usr/local/Frameworks/Simple2D/tvOS,
 					"$(PROJECT_DIR)",
 				);
-				HEADER_SEARCH_PATHS = "\"$(SRCROOT)/MRuby.framework/Headers\"";
 				INFOPLIST_FILE = "$(SRCROOT)/Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = Ruby2D.MyApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
