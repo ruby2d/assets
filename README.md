@@ -6,6 +6,7 @@
 - [`ios/`](ios) and [`tvos/`](tvos)
   - Xcode projects for iOS and tvOS, derived from the [Simple 2D dependencies](https://github.com/simple2d/deps/tree/master/xcode)
   - iOS and tvOS frameworks from [`mruby-frameworks`](https://github.com/ruby2d/mruby-frameworks)
+- [`linux/`](linux) — Simple 2D source and includes for Linux
 - [`macos/`](macos) — Static library dependencies for macOS
 - [`mingw/`](mingw) — Static and dynamic library dependencies for Windows / MinGW
 - [`app.icns`](app.icns) — The [Ruby 2D logo](https://github.com/ruby2d/logo) icon
