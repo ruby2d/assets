@@ -21,3 +21,4 @@
 - From your local [Simple 2D](https://github.com/simple2d) project
   - Copy `simple2d.h` to `include/`
   - Copy the `libsimple2d.a` builds to their respective `macos/lib` and `mingw/lib` directories
+  - Copy `bin/simple2d.sh`, `include/`, `src/`, and `Makefile` to `linux/simple2d/`
