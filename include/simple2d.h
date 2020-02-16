@@ -537,6 +537,26 @@ S2D_Sound *S2D_CreateSound(const char *path);
 void S2D_PlaySound(S2D_Sound *snd);
 
 /*
+ * Get the sound's volume
+ */
+int S2D_GetSoundVolume(S2D_Sound *snd);
+
+/*
+ * Set the sound's volume a given percentage
+ */
+void S2D_SetSoundVolume(S2D_Sound *snd, int volume);
+
+/*
+ * Get the sound mixer volume
+ */
+int S2D_GetSoundMixVolume();
+
+/*
+ * Set the sound mixer volume a given percentage
+ */
+void S2D_SetSoundMixVolume(int volume);
+
+/*
  * Free the sound
  */
 void S2D_FreeSound(S2D_Sound *snd);
@@ -687,6 +707,7 @@ void S2D_GL_DrawSprite(S2D_Sprite *spr);
 void S2D_GL_DrawText(S2D_Text *txt);
 void S2D_GL_FreeTexture(GLuint *id);
 void S2D_GL_Clear(S2D_Color clr);
+void S2D_GL_FlushBuffers();
 
 // OpenGL & GLES Internal Functions ////////////////////////////////////////////
 
@@ -728,6 +749,7 @@ void S2D_GL_Clear(S2D_Color clr);
   void S2D_GL3_DrawSprite(S2D_Sprite *spr);
   void S2D_GL2_DrawText(S2D_Text *txt);
   void S2D_GL3_DrawText(S2D_Text *txt);
+  void S2D_GL3_FlushBuffers();
 #endif
 
 #ifdef __cplusplus
