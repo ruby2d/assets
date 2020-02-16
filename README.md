@@ -13,12 +13,10 @@
 
 ## Updating
 
-- From [simple2d/deps](https://github.com/simple2d/deps):
-  - Copy over SDL and GLEW headers to `include/`
-  - Copy over `macos/lib`, `mingw/lib`, and `mingw/bin`
-  - Copy over Xcode iOS and tvOS projects from `xcode/ios` and `xcode/tvos`
-  - Copy iOS and tvOS [MRuby frameworks](https://github.com/ruby2d/mruby-frameworks) to their respective project directories, add them to the Xcode projects (Target -> Build Phases -> Link Binary with Libraries) and the "Header Search Paths"; Rename Bundle Identifiers from "Simple2D.MyApp" to "Ruby2D.MyApp"
-- From your local [Simple 2D](https://github.com/simple2d) project
-  - Copy `simple2d.h` to `include/`
-  - Copy the `libsimple2d.a` builds to their respective `macos/lib` and `mingw/lib` directories
-  - Copy `bin/simple2d.sh`, `include/`, `src/`, and `Makefile` to `linux/simple2d/`
+1. Update the Simple 2D version in the [Rakefile](Rakefile)
+2. Run `rake`
+
+To update the Xcode projects:
+- Copy over Xcode iOS and tvOS projects from `xcode/ios` and `xcode/tvos` in [simple2d/deps](https://github.com/simple2d/deps)
+- Add frameworks to the Xcode projects (Target -> Build Phases -> Link Binary with Libraries) and the "Header Search Paths"
+- Rename Bundle Identifiers from "Simple2D.MyApp" to "Ruby2D.MyApp"
