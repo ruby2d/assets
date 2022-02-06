@@ -1,10 +1,9 @@
 # Library dependency versions — update these when new releases are available
 mruby_version     = '3.0.0'
-sdl_version       = '2.0.16'
+sdl_version       = '2.0.20'
 sdl_image_version = '2.0.5'
 sdl_mixer_version = '2.0.4'
 sdl_ttf_version   = '2.0.15'
-glew_version      = '2.1.0'
 
 # Shared variables
 tmp_dir = nil
@@ -44,118 +43,80 @@ end
 
 # Tasks ########################################################################
 
+task :default => [:list]
 
-desc "Update all assets"
-task :update => [
-  :set_up_tmp_dir,
-  :download_extract_libs,
-  :assemble_includes,
-  :assemble_mingw_libs,
-  :assemble_macos_libs
-] do
-  puts "\n😎 All assets updated!\n".success
+desc 'List commands'
+task :list do
+  puts `rake -T`
 end
 
 
-desc 'Create and set the temporary working directory'
-task :set_up_tmp_dir do
-  print_task 'Creating and setting `tmp/` directory'
+desc "Update all assets"
+task :update => [
+  :set_tmp_dir,
+  :download_extract_libs,
+  :assemble_includes,
+  :assemble_macos_libs,
+  :assemble_mingw_libs
+] do
+  puts "\n😎 All assets updated for this platform!\n".success
+end
 
-  # Create dir and enter
+
+desc 'Set the temporary working directory'
+task :set_tmp_dir do
+
+  print_task 'Set `tmp/` directory'
+
+  # Create tmp directory
   FileUtils.mkdir_p 'tmp'
-  Dir.chdir 'tmp'
 
-  # Save the dir location
+  # Change to tmp dir, save location
+  Dir.chdir 'tmp'
   tmp_dir = Dir.pwd
 
-  # Delete only folders from the
-  FileUtils.rm_rf Dir.glob('tmp/*/')
 end
 
 
 desc "Download and extract libraries"
-task :download_extract_libs => :set_up_tmp_dir do
+task :download_extract_libs => :set_tmp_dir do
+
+  # Clean out tmp dir if already exists
+  FileUtils.rm_rf Dir.glob("#{tmp_dir}/*")
 
   # Library URLs
-  mruby_release = "https://github.com/mruby/mruby/archive/refs/tags/#{mruby_version}.zip"
-
-  sdl_src = "https://www.libsdl.org/release/SDL2-#{sdl_version}.tar.gz"
-  sdl_mingw = "https://www.libsdl.org/release/SDL2-devel-#{sdl_version}-mingw.tar.gz"
-
-  sdl_image_src = "https://www.libsdl.org/projects/SDL_image/release/SDL2_image-#{sdl_image_version}.tar.gz"
-  sdl_image_mingw = "https://www.libsdl.org/projects/SDL_image/release/SDL2_image-devel-#{sdl_image_version}-mingw.tar.gz"
-
-  sdl_mixer_src = "https://www.libsdl.org/projects/SDL_mixer/release/SDL2_mixer-#{sdl_mixer_version}.tar.gz"
-  sdl_mixer_mingw = "https://www.libsdl.org/projects/SDL_mixer/release/SDL2_mixer-devel-#{sdl_mixer_version}-mingw.tar.gz"
-
-  sdl_ttf_src = "https://www.libsdl.org/projects/SDL_ttf/release/SDL2_ttf-#{sdl_ttf_version}.tar.gz"
-  sdl_ttf_mingw = "https://www.libsdl.org/projects/SDL_ttf/release/SDL2_ttf-devel-#{sdl_ttf_version}-mingw.tar.gz"
-
-  glew_src = "https://github.com/nigels-com/glew/archive/glew-#{glew_version}.zip"
-  glew_release = "https://github.com/nigels-com/glew/releases/download/glew-#{glew_version}/glew-#{glew_version}-win32.zip"
+  mruby_url = "https://github.com/mruby/mruby/archive/refs/tags/#{mruby_version}.zip"
+  sdl_url = "https://github.com/libsdl-org/SDL/archive/refs/tags/release-#{sdl_version}.zip"
+  sdl_image_url = "https://github.com/libsdl-org/SDL_image/archive/refs/tags/release-#{sdl_image_version}.zip"
+  sdl_mixer_url = "https://github.com/libsdl-org/SDL_mixer/archive/refs/tags/release-#{sdl_mixer_version}.zip"
+  sdl_ttf_url = "https://github.com/libsdl-org/SDL_ttf/archive/refs/tags/release-#{sdl_ttf_version}.zip"
 
   # Download libs
 
   def download(lib_name, url, filename)
-    if File.exist? filename
-      print_task "#{lib_name} already downloaded..."
-    else
-      print_task "Downloading #{lib_name}..."
-      run_cmd "curl -L #{url} -o #{filename}"
-    end
+    print_task "Downloading #{lib_name}..."
+    run_cmd "curl -L #{url} -o #{filename}"
   end
 
-  download 'mruby release', mruby_release, "mruby-#{mruby_version}.zip"
-
-  download 'SDL2 source', sdl_src, "SDL2-#{sdl_version}.tar.gz"
-  download 'SDL2 MinGW', sdl_mingw, "SDL2-mingw-#{sdl_version}.tar.gz"
-
-  download 'SDL2_image source', sdl_image_src, "SDL2_image-#{sdl_image_version}.tar.gz"
-  download 'SDL2_image MinGW', sdl_image_mingw, "SDL2_image-mingw-#{sdl_image_version}.tar.gz"
-
-  download 'SDL2_mixer source', sdl_mixer_src, "SDL2_mixer-#{sdl_mixer_version}.tar.gz"
-  download 'SDL2_mixer MinGW', sdl_mixer_mingw, "SDL2_mixer-mingw-#{sdl_mixer_version}.tar.gz"
-
-  download 'SDL2_ttf source', sdl_ttf_src, "SDL2_ttf-#{sdl_ttf_version}.tar.gz"
-  download 'SDL2_ttf MinGW', sdl_ttf_mingw, "SDL2_ttf-mingw-#{sdl_ttf_version}.tar.gz"
-
-  download 'GLEW source', glew_src, "glew-#{glew_version}.zip"
-  download 'GLEW release', glew_release, "glew-release-#{glew_version}.zip"
+  download 'mruby', mruby_url, "mruby-#{mruby_version}.zip"
+  download 'SDL', sdl_url, "SDL-#{sdl_version}.zip"
+  download 'SDL_image', sdl_image_url, "SDL_image-#{sdl_image_version}.zip"
+  download 'SDL_mixer', sdl_mixer_url, "SDL_mixer-#{sdl_mixer_version}.zip"
+  download 'SDL_ttf', sdl_ttf_url, "SDL_ttf-#{sdl_ttf_version}.zip"
 
   # Extract and rename directories
 
   def extract(filename, extracted_filename, rename_to)
-    if File.exists? rename_to
-      print_task "#{filename} already extracted..."
-    else
-      print_task "Extracting #{filename}..."
-
-      if filename.include? '.tar.gz'
-        run_cmd "tar -xzf #{filename}"
-      else
-        run_cmd "unzip -q #{filename}"
-      end
-
-      File.rename extracted_filename, rename_to
-    end
+    print_task "Extracting #{filename}..."
+    run_cmd "unzip -q #{filename}"
+    File.rename extracted_filename, rename_to
   end
 
   extract "mruby-#{mruby_version}.zip", "mruby-#{mruby_version}", 'mruby'
-
-  extract "SDL2-#{sdl_version}.tar.gz", "SDL2-#{sdl_version}", 'SDL'
-  extract "SDL2-mingw-#{sdl_version}.tar.gz", "SDL2-#{sdl_version}", 'SDL-mingw'
-
-  extract "SDL2_image-#{sdl_image_version}.tar.gz", "SDL2_image-#{sdl_image_version}", 'SDL_image'
-  extract "SDL2_image-mingw-#{sdl_image_version}.tar.gz", "SDL2_image-#{sdl_image_version}", 'SDL_image-mingw'
-
-  extract "SDL2_mixer-#{sdl_mixer_version}.tar.gz", "SDL2_mixer-#{sdl_mixer_version}", 'SDL_mixer'
-  extract "SDL2_mixer-mingw-#{sdl_mixer_version}.tar.gz", "SDL2_mixer-#{sdl_mixer_version}", 'SDL_mixer-mingw'
-
-  extract "SDL2_ttf-#{sdl_ttf_version}.tar.gz", "SDL2_ttf-#{sdl_ttf_version}", 'SDL_ttf'
-  extract "SDL2_ttf-mingw-#{sdl_ttf_version}.tar.gz", "SDL2_ttf-#{sdl_ttf_version}", 'SDL_ttf-mingw'
-
-  extract "glew-#{glew_version}.zip", "glew-glew-#{glew_version}", 'glew'
-  extract "glew-release-#{glew_version}.zip", "glew-#{glew_version}", 'glew-release'
+  extract "SDL-#{sdl_version}.zip", "SDL-release-#{sdl_version}", 'SDL'
+  extract "SDL_image-#{sdl_image_version}.zip", "SDL_image-release-#{sdl_image_version}", 'SDL_image'
+  extract "SDL_mixer-#{sdl_mixer_version}.zip", "SDL_mixer-release-#{sdl_mixer_version}", 'SDL_mixer'
+  extract "SDL_ttf-#{sdl_ttf_version}.zip", "SDL_ttf-release-#{sdl_ttf_version}", 'SDL_ttf'
 
 end
 
@@ -167,7 +128,7 @@ task :assemble_includes => :download_extract_libs do
 
   # Set and clean include directory
   include_dir = "#{tmp_dir}/../include"
-  FileUtils.rm_rf Dir.glob('include/*')
+  FileUtils.rm_rf Dir.glob("#{include_dir}/*")
 
   # mruby
   FileUtils.cp_r 'mruby/include/.', "#{include_dir}"
@@ -180,40 +141,24 @@ task :assemble_includes => :download_extract_libs do
   FileUtils.cp 'SDL_ttf/SDL_ttf.h', "#{include_dir}/SDL2"
 
   # GLEW
-  FileUtils.cp 'glew-release/include/GL/glew.h', include_dir
+  FileUtils.cp '../mingw/glew/glew.h', include_dir
 
 end
 
 
-desc "Assemble MinGW libs"
-task :assemble_mingw_libs => :download_extract_libs do
-
-  print_task "Assembling MinGW libs..."
-
-  mingw_dir = "#{tmp_dir}/../mingw"
-  mingw_bin_dir = "#{mingw_dir}/bin"
-  mingw_lib_dir = "#{mingw_dir}/lib"
-
-  FileUtils.mkdir_p [mingw_bin_dir, mingw_lib_dir]
-  FileUtils.rm_rf Dir.glob("#{mingw_bin_dir}/*")
-  FileUtils.rm_rf Dir.glob("#{mingw_lib_dir}/*")
-
-  ['SDL-mingw', 'SDL_image-mingw', 'SDL_mixer-mingw', 'SDL_ttf-mingw'].each do |lib|
-    FileUtils.cp Dir.glob("#{lib}/x86_64-w64-mingw32/bin/*.dll"), mingw_bin_dir
-    FileUtils.cp Dir.glob("#{lib}/x86_64-w64-mingw32/lib/*.a"), mingw_lib_dir
-  end
-
-  FileUtils.cp "#{mingw_dir}/glew/glew32.dll", mingw_bin_dir
-  FileUtils.cp ["#{mingw_dir}/glew/libglew32.a", "#{mingw_dir}/glew/libglew32.dll.a"], mingw_lib_dir
-
+desc "Uninstall all SDL2-related libs using Homebrew"
+task :uninstall_sdl_homebrew do
+  run_cmd 'brew uninstall --force '\
+    'libmodplug mpg123 '\
+    'sdl2_ttf sdl2_mixer sdl2_image sdl2'
 end
 
 
 desc "Build and assemble macOS libs"
-task :assemble_macos_libs => [:download_extract_libs, :uninstall_sdl_homebrew] do
+task :assemble_macos_libs => [:set_tmp_dir, :uninstall_sdl_homebrew] do
 
   unless RUBY2D_PLATFORM == :macos
-    puts "Not macOS, skipping task...\n".warn
+    puts "Not macOS, skipping task...".warn
     next
   end
 
@@ -223,9 +168,10 @@ task :assemble_macos_libs => [:download_extract_libs, :uninstall_sdl_homebrew] d
   homebrew_dir = "#{tmp_dir}/../homebrew"
   run_cmd "brew install --formula #{homebrew_dir}/mpg123.rb"
   run_cmd "brew install --formula #{homebrew_dir}/libmodplug.rb"
+  run_cmd "export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1 && brew install --formula #{homebrew_dir}/sdl2_ttf.rb"
 
   # Install SDL libs
-  run_cmd "brew install sdl2 sdl2_image sdl2_mixer sdl2_ttf"
+  run_cmd "brew install sdl2 sdl2_image sdl2_mixer"
 
   # Set Homebrew paths
   brew_cellar = `brew --cellar`.strip
@@ -290,41 +236,25 @@ task :assemble_macos_libs => [:download_extract_libs, :uninstall_sdl_homebrew] d
     FileUtils.rm_rf Dir.glob("#{macos_dir}/universal/*")
     make_universal_libs(arch, other_arch, macos_dir)
   else
-    print_task "Only #{arch} is present, skipping universal macOS lib creation..."
+    print_task "Only #{arch} is present, skipping universal macOS lib creation...\n"\
+               "Run on a #{other_arch} Mac to create universal libs"
   end
 
 end
 
 
+desc "Build and assemble Windows (MinGW) libs"
+task :assemble_mingw_libs => :set_tmp_dir do
 
-desc "Build mruby"
-task :build_mruby_wasm => :download_extract_libs do
-
-  print_task "Building mruby for WebAssembly..."
-
-  mruby_src_dir = "#{tmp_dir}/mruby"
-  wasm_dir = "#{tmp_dir}/../wasm"
-
-  Dir.chdir(mruby_src_dir) do
-    ENV['MRUBY_CONFIG'] = "#{wasm_dir}/build_config.rb"
-    run_cmd 'rake'
-
-    FileUtils.cp 'build/emscripten/lib/libmruby.a', "#{wasm_dir}"
+  unless RUBY2D_PLATFORM == :windows
+    puts "Not Windows (MinGW), skipping task...".warn
+    next
   end
 
 end
 
 
-
-desc "Uninstall all SDL2-related libs using Homebrew"
-task :uninstall_sdl_homebrew do
-  run_cmd 'brew uninstall --force '\
-    'freetype '\
-    'libogg flac libvorbis libmodplug mpg123 '\
-    'jpeg libpng libtiff giflib webp '\
-    'sdl2_ttf sdl2_mixer sdl2_image sdl2'
-end
-
+# Helper tasks
 
 desc "Remove Xcode user data"
 task :remove_xcode_user_data do
