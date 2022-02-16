@@ -3,7 +3,7 @@ mruby_version     = '3.0.0'
 sdl_version       = '2.0.20'
 sdl_image_version = '2.0.5'
 sdl_mixer_version = '2.0.4'
-sdl_ttf_version   = '2.0.15'
+sdl_ttf_version   = '2.0.18'
 
 # Shared variables
 tmp_dir = nil
@@ -82,7 +82,7 @@ desc "Download and extract libraries"
 task :download_extract_libs => :set_tmp_dir do
 
   # Clean out tmp dir if already exists
-  FileUtils.rm_rf Dir.glob("#{tmp_dir}/*")
+  FileUtils.rm_rf Dir.glob("#{tmp_dir}/*/")
 
   # Library URLs
   mruby_url = "https://github.com/mruby/mruby/archive/refs/tags/#{mruby_version}.zip"
@@ -94,8 +94,12 @@ task :download_extract_libs => :set_tmp_dir do
   # Download libs
 
   def download(lib_name, url, filename)
-    print_task "Downloading #{lib_name}..."
-    run_cmd "curl -L #{url} -o #{filename}"
+    if File.exist? filename
+      print_task "#{lib_name} already downloaded..."
+    else
+      print_task "Downloading #{lib_name}..."
+      run_cmd "curl -L #{url} -o #{filename}"
+    end
   end
 
   download 'mruby', mruby_url, "mruby-#{mruby_version}.zip"
@@ -146,16 +150,27 @@ task :assemble_includes => :download_extract_libs do
 end
 
 
-desc "Uninstall all SDL2-related libs using Homebrew"
-task :uninstall_sdl_homebrew do
-  run_cmd 'brew uninstall --force '\
-    'libmodplug mpg123 '\
-    'sdl2_ttf sdl2_mixer sdl2_image sdl2'
+desc "Build mruby"
+task :build_mruby => :download_extract_libs do
+
+  print_task "Building mruby..."
+
+  mruby_dir = "#{tmp_dir}/../mruby"
+  mruby_src_dir = "#{tmp_dir}/mruby"
+  build_config = "#{mruby_dir}/build_config.rb"
+
+  Dir.chdir(mruby_src_dir) do
+    ENV['MRUBY_CONFIG'] = build_config
+    run_cmd 'rake'
+  end
+
+  FileUtils.rm "#{build_config}.lock"
+
 end
 
 
 desc "Build and assemble macOS libs"
-task :assemble_macos_libs => [:set_tmp_dir, :uninstall_sdl_homebrew] do
+task :assemble_macos_libs => [:set_tmp_dir, :build_mruby] do
 
   unless RUBY2D_PLATFORM == :macos
     puts "Not macOS, skipping task...".warn
@@ -164,44 +179,59 @@ task :assemble_macos_libs => [:set_tmp_dir, :uninstall_sdl_homebrew] do
 
   print_task "Building and assembling macOS libs..."
 
-  # Install custom `mpg123` and `libmodplug` to get static libraries and linking
-  homebrew_dir = "#{tmp_dir}/../homebrew"
-  run_cmd "brew install --formula #{homebrew_dir}/mpg123.rb"
-  run_cmd "brew install --formula #{homebrew_dir}/libmodplug.rb"
-  run_cmd "export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1 && brew install --formula #{homebrew_dir}/sdl2_ttf.rb"
+  # Graphite — Download and build static library
+  #   This SDL_ttf / HarfBuzz dependency has a bug in CMakeLists.txt which breaks
+  #   static builds. This script here clones the library, removes the line causing
+  #   the issue (see https://github.com/silnrsi/graphite/pull/54), and compiles
+  #   with CMake. Hopefully this PR gets merged and a new version cut so we can
+  #   get this library from Homebrew (like the others) and skip this workaround.
+  run_cmd "brew install cmake"
+  FileUtils.rm_rf "#{tmp_dir}/graphite"
+  run_cmd "git clone --depth=1 https://github.com/silnrsi/graphite.git graphite"
+  Dir.chdir "#{tmp_dir}/graphite"
+  run_cmd "git checkout 425da3d08926b9cf321fc0014dfa979c24d2cf64"
+  run_cmd "sed -i '' 147d src/CMakeLists.txt"  # delete infected line 147
+
+  graphite_build_dir = "#{tmp_dir}/graphite/build"
+  FileUtils.mkdir_p graphite_build_dir
+  Dir.chdir graphite_build_dir
+  run_cmd "cmake .. -DBUILD_SHARED_LIBS=OFF"
+  run_cmd "make"
+
+  Dir.chdir tmp_dir
+  # End Graphite static build
 
   # Install SDL libs
-  run_cmd "brew install sdl2 sdl2_image sdl2_mixer"
-
-  # Set Homebrew paths
-  brew_cellar = `brew --cellar`.strip
-  brew_sdl_dir = Dir.glob("#{brew_cellar}/sdl2/#{sdl_version}*")[0]
-  brew_sdl_image_dir = Dir.glob("#{brew_cellar}/sdl2_image/#{sdl_image_version}*")[0]
-  brew_sdl_mixer_dir = Dir.glob("#{brew_cellar}/sdl2_mixer/#{sdl_mixer_version}*")[0]
-  brew_sdl_ttf_dir = Dir.glob("#{brew_cellar}/sdl2_ttf/#{sdl_ttf_version}*")[0]
+  run_cmd "brew install sdl2 sdl2_image sdl2_mixer sdl2_ttf"
 
   # Save the machine architecture
   arch = `uname -m`.strip
 
   # Clean out lib files for current architecture
   macos_dir = "#{tmp_dir}/../macos"
-  FileUtils.mkdir_p "#{macos_dir}/#{arch}"
+  bin_dir = "#{macos_dir}/#{arch}/bin"
+  lib_dir = "#{macos_dir}/#{arch}/lib"
   FileUtils.rm_rf Dir.glob("#{macos_dir}/#{arch}/*")
+  FileUtils.mkdir_p bin_dir
+  FileUtils.mkdir_p lib_dir
+
+  # Set Homebrew paths
+  brew_cellar = `brew --cellar`.strip
 
   # Copy over SDL libraries from Homebrew
   FileUtils.cp [
     # SDL
-    "#{brew_sdl_dir}/lib/libSDL2.a",
+    Dir.glob("#{brew_cellar}/sdl2/*/lib/libSDL2.a")[0],
 
     # SDL_image
-    "#{brew_sdl_image_dir}/lib/libSDL2_image.a",
+    Dir.glob("#{brew_cellar}/sdl2_image/*/lib/libSDL2_image.a")[0],
     Dir.glob("#{brew_cellar}/jpeg/*/lib/libjpeg.a")[0],
     Dir.glob("#{brew_cellar}/libpng/*/lib/libpng16.a")[0],
     Dir.glob("#{brew_cellar}/libtiff/*/lib/libtiff.a")[0],
     Dir.glob("#{brew_cellar}/webp/*/lib/libwebp.a")[0],
 
     # SDL_mixer
-    "#{brew_sdl_mixer_dir}/lib/libSDL2_mixer.a",
+    Dir.glob("#{brew_cellar}/sdl2_mixer/*/lib/libSDL2_mixer.a")[0],
     Dir.glob("#{brew_cellar}/mpg123/*/lib/libmpg123.a")[0],
     Dir.glob("#{brew_cellar}/libogg/*/lib/libogg.a")[0],
     Dir.glob("#{brew_cellar}/flac/*/lib/libFLAC.a")[0],
@@ -210,31 +240,42 @@ task :assemble_macos_libs => [:set_tmp_dir, :uninstall_sdl_homebrew] do
     Dir.glob("#{brew_cellar}/libmodplug/*/lib/libmodplug.a")[0],
 
     # SDL_ttf
-    "#{brew_sdl_ttf_dir}/lib/libSDL2_ttf.a",
-    Dir.glob("#{brew_cellar}/freetype/*/lib/libfreetype.a")[0]
-  ], "#{macos_dir}/#{arch}"
+    Dir.glob("#{brew_cellar}/sdl2_ttf/*/lib/libSDL2_ttf.a")[0],
+    Dir.glob("#{brew_cellar}/freetype/*/lib/libfreetype.a")[0],
+    Dir.glob("#{brew_cellar}/harfbuzz/*/lib/libharfbuzz.a")[0],
+    Dir.glob("#{tmp_dir}/graphite/build/src/libgraphite2.a")[0]
+  ], "#{lib_dir}"
+
+  # mruby
+  mruby_src_dir = "#{tmp_dir}/mruby"
+  mruby_dir = "#{tmp_dir}/../mruby"
+  FileUtils.cp "#{mruby_src_dir}/build/host/bin/mrbc", bin_dir
+  FileUtils.cp "#{mruby_src_dir}/build/host/lib/libmruby.a", lib_dir
 
   # Make universal libraries by combining x86_64 and arm64 versions into one file
-  def make_universal_libs(this_arch, other_arch, macos_dir)
-    Dir.glob("#{macos_dir}/#{this_arch}/*").each do |lib|
-      other_arch_lib = lib.sub(this_arch, other_arch)
-      universal_lib = lib.sub(this_arch, 'universal')
-      run_cmd "lipo #{lib} #{other_arch_lib} -create -output #{universal_lib}"
-      run_cmd "lipo -info #{universal_lib}"
-    end
+  def make_universal(file_path, this_arch, other_arch)
+    other_arch_file = file_path.sub(this_arch, other_arch)  # create file path for other architecture...
+    universal_file = file_path.sub(this_arch, 'universal')  # ...and universal architecture
+    run_cmd "lipo #{file_path} #{other_arch_file} -create -output #{universal_file}"
+    run_cmd "lipo -info #{universal_file}"
   end
 
   # Pick the other machine architecture (e.g. if on x86_64, will pick arm64)
   other_arch = arch == 'x86_64' ? 'arm64' : 'x86_64'
-  FileUtils.mkdir_p "#{macos_dir}/#{other_arch}"
+  FileUtils.mkdir_p "#{macos_dir}/#{other_arch}/lib"
 
   # If the other architecture lib directory has files in it, create universal versions
-  if !Dir.empty? "#{macos_dir}/#{other_arch}"
+  if !Dir.empty? "#{macos_dir}/#{other_arch}/lib"
     print_task "Creating universal macOS libs..."
     # If libraries from the other architecture is present, merge them to create a universal file
-    FileUtils.mkdir_p "#{macos_dir}/universal"
     FileUtils.rm_rf Dir.glob("#{macos_dir}/universal/*")
-    make_universal_libs(arch, other_arch, macos_dir)
+    FileUtils.mkdir_p "#{macos_dir}/universal/lib"
+    Dir.glob("#{macos_dir}/#{arch}/lib/*").each do |lib|
+      make_universal(lib, arch, other_arch)
+    end
+
+    FileUtils.mkdir_p "#{macos_dir}/universal/bin"
+    make_universal("#{bin_dir}/mrbc", arch, other_arch)
   else
     print_task "Only #{arch} is present, skipping universal macOS lib creation...\n"\
                "Run on a #{other_arch} Mac to create universal libs"
@@ -261,3 +302,15 @@ task :remove_xcode_user_data do
   print_task "Removing Xcode user data..."
   run_cmd "find ./xcode -name \"xcuserdata\" -type d -exec rm -r \"{}\" \\;"
 end
+
+
+desc "Uninstall all SDL2-related libs using Homebrew"
+task :uninstall_sdl_homebrew do
+  run_cmd 'brew uninstall --force --ignore-dependencies '\
+    'jpeg libpng libtiff giflib webp '\
+    'libogg flac libmodplug libvorbis mpg123 '\
+    'freetype cairo graphite2 harfbuzz '\
+    'sdl2_ttf sdl2_mixer sdl2_image sdl2'
+end
+
+
