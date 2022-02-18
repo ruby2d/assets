@@ -57,7 +57,7 @@ task :update => [
   :download_extract_libs,
   :assemble_includes,
   :assemble_macos_libs,
-  :assemble_mingw_libs
+  :assemble_windows_libs
 ] do
   puts "\n😎 All assets updated for this platform!\n".success
 end
@@ -110,6 +110,10 @@ task :download_extract_libs => :set_tmp_dir do
 
   # Extract and rename directories
 
+  if RUBY2D_PLATFORM == :windows && !system('unzip')
+    run_cmd 'pacman -S --noconfirm unzip'
+  end
+
   def extract(filename, extracted_filename, rename_to)
     print_task "Extracting #{filename}..."
     run_cmd "unzip -q #{filename}"
@@ -145,7 +149,7 @@ task :assemble_includes => :download_extract_libs do
   FileUtils.cp 'SDL_ttf/SDL_ttf.h', "#{include_dir}/SDL2"
 
   # GLEW
-  FileUtils.cp '../mingw/glew/glew.h', include_dir
+  FileUtils.cp '../windows/glew/glew.h', include_dir
 
 end
 
@@ -154,12 +158,9 @@ desc "Build mruby"
 task :build_mruby => :download_extract_libs do
 
   print_task "Building mruby..."
+  build_config = "#{tmp_dir}/../mruby/build_config.rb"
 
-  mruby_dir = "#{tmp_dir}/../mruby"
-  mruby_src_dir = "#{tmp_dir}/mruby"
-  build_config = "#{mruby_dir}/build_config.rb"
-
-  Dir.chdir(mruby_src_dir) do
+  Dir.chdir("#{tmp_dir}/mruby") do
     ENV['MRUBY_CONFIG'] = build_config
     run_cmd 'rake'
   end
@@ -207,7 +208,7 @@ task :assemble_macos_libs => [:set_tmp_dir, :build_mruby] do
   # Save the machine architecture
   arch = `uname -m`.strip
 
-  # Clean out lib files for current architecture
+  # Clean out files for current architecture
   macos_dir = "#{tmp_dir}/../macos"
   bin_dir = "#{macos_dir}/#{arch}/bin"
   lib_dir = "#{macos_dir}/#{arch}/lib"
@@ -244,13 +245,12 @@ task :assemble_macos_libs => [:set_tmp_dir, :build_mruby] do
     Dir.glob("#{brew_cellar}/freetype/*/lib/libfreetype.a")[0],
     Dir.glob("#{brew_cellar}/harfbuzz/*/lib/libharfbuzz.a")[0],
     Dir.glob("#{tmp_dir}/graphite/build/src/libgraphite2.a")[0]
-  ], "#{lib_dir}"
+  ], lib_dir
 
   # mruby
-  mruby_src_dir = "#{tmp_dir}/mruby"
-  mruby_dir = "#{tmp_dir}/../mruby"
-  FileUtils.cp "#{mruby_src_dir}/build/host/bin/mrbc", bin_dir
-  FileUtils.cp "#{mruby_src_dir}/build/host/lib/libmruby.a", lib_dir
+  mruby_build_dir = "#{tmp_dir}/mruby/build/host"
+  FileUtils.cp "#{mruby_build_dir}/bin/mrbc", bin_dir
+  FileUtils.cp "#{mruby_build_dir}/lib/libmruby.a", lib_dir
 
   # Make universal libraries by combining x86_64 and arm64 versions into one file
   def make_universal(file_path, this_arch, other_arch)
@@ -284,13 +284,83 @@ task :assemble_macos_libs => [:set_tmp_dir, :build_mruby] do
 end
 
 
-desc "Build and assemble Windows (MinGW) libs"
-task :assemble_mingw_libs => :set_tmp_dir do
+desc "Build and assemble Windows libs"
+task :assemble_windows_libs => [:set_tmp_dir, :build_mruby] do
 
   unless RUBY2D_PLATFORM == :windows
     puts "Not Windows (MinGW), skipping task...".warn
     next
   end
+
+  # Update the system
+  run_cmd "pacman -Syu --noconfirm"
+
+  # Install SDL2 libraries
+  arch = 'mingw-w64-x86_64'
+  run_cmd "pacman -S --noconfirm #{arch}-SDL2 #{arch}-SDL2_image #{arch}-SDL2_mixer #{arch}-SDL2_ttf"
+
+  # Clean out files for current architecture
+  windows_dir = "#{tmp_dir}/../windows"
+  bin_dir = "#{windows_dir}/#{arch}/bin"
+  lib_dir = "#{windows_dir}/#{arch}/lib"
+  FileUtils.rm_rf Dir.glob("#{windows_dir}/#{arch}/*")
+  FileUtils.mkdir_p bin_dir
+  FileUtils.mkdir_p lib_dir
+
+  # Location where pacman installs MinGW libraries
+  pacman_lib_dir = "C:/Ruby30-x64/msys64/mingw64/lib"
+
+  # Copy over SDL libraries
+  FileUtils.cp [
+
+    # SDL
+    "#{pacman_lib_dir}/libSDL2.a",
+
+    # SDL_image
+    "#{pacman_lib_dir}/libSDL2_image.a",
+    "#{pacman_lib_dir}/libjpeg.a",
+    "#{pacman_lib_dir}/libpng16.a",
+    "#{pacman_lib_dir}/libtiff.a",
+    "#{pacman_lib_dir}/libwebp.a",
+    "#{pacman_lib_dir}/libjbig.a",
+    "#{pacman_lib_dir}/libdeflate.a",
+    "#{pacman_lib_dir}/liblzma.a",
+    "#{pacman_lib_dir}/libzstd.a",
+    "#{pacman_lib_dir}/libLerc.a",
+
+    # SDL_mixer
+    "#{pacman_lib_dir}/libSDL2_mixer.a",
+    "#{pacman_lib_dir}/libmpg123.a",
+    "#{pacman_lib_dir}/libFLAC.a",
+    "#{pacman_lib_dir}/libvorbis.a",
+    "#{pacman_lib_dir}/libvorbisfile.a",
+    "#{pacman_lib_dir}/libogg.a",
+    "#{pacman_lib_dir}/libmodplug.a",
+    "#{pacman_lib_dir}/libopus.a",
+    "#{pacman_lib_dir}/libopusfile.a",
+    "#{pacman_lib_dir}/libsndfile.a",
+
+    # SDL_ttf
+    "#{pacman_lib_dir}/libSDL2_ttf.a",
+    "#{pacman_lib_dir}/libfreetype.a",
+    "#{pacman_lib_dir}/libharfbuzz.a",
+    "#{pacman_lib_dir}/libgraphite2.a",
+    "#{pacman_lib_dir}/libbz2.a",
+    "#{pacman_lib_dir}/libbrotlicommon.a",
+    "#{pacman_lib_dir}/libbrotlidec.a",
+
+    # Other dependencies
+    "#{pacman_lib_dir}/libz.a",
+    "#{pacman_lib_dir}/gcc/x86_64-w64-mingw32/11.2.0/libstdc++.a",
+    "#{pacman_lib_dir}/gcc/x86_64-w64-mingw32/11.2.0/libssp.a",
+    "#{windows_dir}/glew/libglew32.a"
+
+  ], lib_dir
+
+  # mruby
+  mruby_build_dir = "#{tmp_dir}/mruby/build/host"
+  FileUtils.cp "#{mruby_build_dir}/bin/mrbc.exe", bin_dir
+  FileUtils.cp "#{mruby_build_dir}/lib/libmruby.a", lib_dir
 
 end
 
@@ -312,5 +382,3 @@ task :uninstall_sdl_homebrew do
     'freetype cairo graphite2 harfbuzz '\
     'sdl2_ttf sdl2_mixer sdl2_image sdl2'
 end
-
-
