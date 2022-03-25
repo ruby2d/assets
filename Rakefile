@@ -170,6 +170,23 @@ task :build_mruby => :download_extract_libs do
 end
 
 
+desc "Build mruby for WebAssembly"
+task :build_mruby_wasm => :download_extract_libs do
+
+  print_task "Building mruby..."
+  build_config = "#{tmp_dir}/../mruby/build_config_wasm.rb"
+
+  Dir.chdir("#{tmp_dir}/mruby") do
+    ENV['MRUBY_CONFIG'] = build_config
+    run_cmd 'rake'
+  end
+
+  wasm_dir = "#{tmp_dir}/../wasm"
+  FileUtils.rm ["#{build_config}.lock", "#{wasm_dir}/libmruby.a"]
+  FileUtils.cp "#{tmp_dir}/mruby/build/emscripten/lib/libmruby.a", wasm_dir
+end
+
+
 desc "Build and assemble macOS libs"
 task :assemble_macos_libs => [:set_tmp_dir, :build_mruby] do
 

@@ -2,16 +2,63 @@
 <html lang="en" dir="ltr">
   <head>
     <meta charset="utf-8">
-    <title>Ruby on WebAssembly</title>
+    <title>Ruby 2D</title>
     <style>
       body {
         font-family: system-ui;
       }
+
+      hr {
+        border: none;
+        height: 3px;
+        margin: 15px 0;
+        background-color: lightgray;
+      }
+
+      #canvas {
+        display: block;
+        margin: 0 auto;
+      }
+
+      #output {
+        display: block;
+        box-sizing: border-box;
+        width: 100%;
+        height: 300px;
+        padding: 10px;
+        font-size: 14px;
+        font-family: monospace;
+        color: white;
+        border: none;
+        background-color: black;
+      }
     </style>
   </head>
   <body>
-    <h1>Ruby on WebAssembly</h1>
-    <p>Open the web console to see output and errors.</p>
+    <h1>Ruby 2D</h1>
+    <p>This is a sample HTML template, but you can create your own!</p>
+    <hr>
+    <canvas id="canvas" oncontextmenu=".preventDefault()"></canvas>
+    <h2>Console</h2>
+    <textarea id="output"></textarea>
   </body>
-  <script src="app.js"></script>
+
+  <script>
+    var Module = {
+      canvas: (function() { return document.getElementById('canvas'); })(),
+      print: (function() {
+        var element = document.getElementById('output');
+        if (element) element.value = '';  // clear browser cache
+        return function(text) {
+          if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+          console.log(text);
+          if (element) {
+            element.value += text + "\n";
+            element.scrollTop = element.scrollHeight;  // focus on bottom
+          }
+        };
+      })()
+    };
+  </script>
+  <script async src="app.js"></script>
 </html>
