@@ -301,19 +301,33 @@ task :assemble_macos_libs => [:set_tmp_dir, :build_mruby] do
 end
 
 
+# This is a separate task so it can be run before others. On a new RubyInstaller
+# installation, the shell may need to be restarted after package updates, so
+# this gets it out of the way first thing.
+desc "Update MinGW packages"
+task :update_mingw_packages do
+  run_cmd "pacman -Syu --noconfirm"
+end
+
+
 desc "Build and assemble Windows libs"
-task :assemble_windows_libs => [:set_tmp_dir, :build_mruby] do
+task :assemble_windows_libs => [:set_tmp_dir, :update_mingw_packages, :build_mruby] do
 
   unless RUBY2D_PLATFORM == :windows
     puts "Not Windows (MinGW), skipping task...".warn
     next
   end
 
-  # Update the system
-  run_cmd "pacman -Syu --noconfirm"
-
   # Install SDL2 libraries
-  arch = 'mingw-w64-x86_64'
+
+  if `ruby -v` =~ /ucrt/
+    arch = 'mingw-w64-ucrt-x86_64'
+    ucrt = true
+  else
+    arch = 'mingw-w64-x86_64'
+    ucrt = false
+  end
+
   run_cmd "pacman -S --noconfirm #{arch}-SDL2 #{arch}-SDL2_image #{arch}-SDL2_mixer #{arch}-SDL2_ttf"
 
   # Clean out files for current architecture
@@ -325,7 +339,12 @@ task :assemble_windows_libs => [:set_tmp_dir, :build_mruby] do
   FileUtils.mkdir_p lib_dir
 
   # Location where pacman installs MinGW libraries
-  pacman_lib_dir = "C:/Ruby30-x64/msys64/mingw64/lib"
+  # !!! Use UCRT for Ruby 3.1+ !!!
+  if ucrt
+    pacman_lib_dir = "C:/Ruby31-x64/msys64/ucrt64/lib"
+  else
+    pacman_lib_dir = "C:/Ruby30-x64/msys64/mingw64/lib"
+  end
 
   # Copy over SDL libraries
   FileUtils.cp [
@@ -368,8 +387,8 @@ task :assemble_windows_libs => [:set_tmp_dir, :build_mruby] do
 
     # Other dependencies
     "#{pacman_lib_dir}/libz.a",
-    "#{pacman_lib_dir}/gcc/x86_64-w64-mingw32/11.2.0/libstdc++.a",
-    "#{pacman_lib_dir}/gcc/x86_64-w64-mingw32/11.2.0/libssp.a",
+    "#{pacman_lib_dir}/libstdc++.a",
+    "#{pacman_lib_dir}/libssp.a",
     "#{windows_dir}/glew/libglew32.a"
 
   ], lib_dir
