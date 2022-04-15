@@ -90,6 +90,7 @@ task :download_extract_libs => :set_tmp_dir do
   sdl_image_url = "https://github.com/libsdl-org/SDL_image/archive/refs/tags/release-#{sdl_image_version}.zip"
   sdl_mixer_url = "https://github.com/libsdl-org/SDL_mixer/archive/refs/tags/release-#{sdl_mixer_version}.zip"
   sdl_ttf_url = "https://github.com/libsdl-org/SDL_ttf/archive/refs/tags/release-#{sdl_ttf_version}.zip"
+  angle_url = "https://github.com/google/angle/archive/refs/heads/main.zip"
 
   # Download libs
 
@@ -107,6 +108,7 @@ task :download_extract_libs => :set_tmp_dir do
   download 'SDL_image', sdl_image_url, "SDL_image-#{sdl_image_version}.zip"
   download 'SDL_mixer', sdl_mixer_url, "SDL_mixer-#{sdl_mixer_version}.zip"
   download 'SDL_ttf', sdl_ttf_url, "SDL_ttf-#{sdl_ttf_version}.zip"
+  download 'angle', angle_url, "angle-main.zip"
 
   # Extract and rename directories
 
@@ -125,6 +127,7 @@ task :download_extract_libs => :set_tmp_dir do
   extract "SDL_image-#{sdl_image_version}.zip", "SDL_image-release-#{sdl_image_version}", 'SDL_image'
   extract "SDL_mixer-#{sdl_mixer_version}.zip", "SDL_mixer-release-#{sdl_mixer_version}", 'SDL_mixer'
   extract "SDL_ttf-#{sdl_ttf_version}.zip", "SDL_ttf-release-#{sdl_ttf_version}", 'SDL_ttf'
+  extract "angle-main.zip", "angle-main", 'angle'
 
 end
 
@@ -151,6 +154,11 @@ task :assemble_includes => :download_extract_libs do
   # GLEW
   FileUtils.cp '../windows/glew/glew.h', include_dir
 
+  # ANGLE
+  FileUtils.cp_r 'angle/include/GLES2', include_dir
+  FileUtils.cp_r 'angle/include/GLES3', include_dir
+  FileUtils.cp_r 'angle/include/KHR', include_dir
+  Dir.glob("#{include_dir}/**/.*").each { |f| File.delete(f) }
 end
 
 
@@ -205,7 +213,7 @@ task :assemble_macos_libs => [:set_tmp_dir, :build_mruby] do
   #   get this library from Homebrew (like the others) and skip this workaround.
   run_cmd "brew install cmake"
   FileUtils.rm_rf "#{tmp_dir}/graphite"
-  run_cmd "git clone --depth=1 https://github.com/silnrsi/graphite.git graphite"
+  run_cmd "git clone --depth=1 https://github.com/silnrsi/graphite.git"
   Dir.chdir "#{tmp_dir}/graphite"
   run_cmd "git checkout 425da3d08926b9cf321fc0014dfa979c24d2cf64"
   run_cmd "sed -i '' 147d src/CMakeLists.txt"  # delete infected line 147
