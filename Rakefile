@@ -53,6 +53,7 @@ end
 
 desc "Update all assets"
 task :update => [
+  :update_mingw_packages,
   :set_tmp_dir,
   :download_extract_libs,
   :assemble_includes,
@@ -152,7 +153,8 @@ task :assemble_includes => :download_extract_libs do
   FileUtils.cp 'SDL_ttf/SDL_ttf.h', "#{include_dir}/SDL2"
 
   # GLEW
-  FileUtils.cp '../windows/glew/glew.h', include_dir
+  FileUtils.mkdir_p "#{include_dir}/GL"
+  FileUtils.cp "#{tmp_dir}/../windows/glew.h", "#{include_dir}/GL"
 
   # ANGLE
   FileUtils.cp_r 'angle/include/GLES2', include_dir
@@ -314,12 +316,14 @@ end
 # this gets it out of the way first thing.
 desc "Update MinGW packages"
 task :update_mingw_packages do
-  run_cmd "pacman -Syu --noconfirm"
+  if RUBY2D_PLATFORM == :windows
+    run_cmd "pacman -Syu --noconfirm"
+  end
 end
 
 
 desc "Build and assemble Windows libs"
-task :assemble_windows_libs => [:set_tmp_dir, :update_mingw_packages, :build_mruby] do
+task :assemble_windows_libs => [:set_tmp_dir, :build_mruby] do
 
   unless RUBY2D_PLATFORM == :windows
     puts "Not Windows (MinGW), skipping task...".warn
@@ -336,7 +340,7 @@ task :assemble_windows_libs => [:set_tmp_dir, :update_mingw_packages, :build_mru
     ucrt = false
   end
 
-  run_cmd "pacman -S --noconfirm #{arch}-SDL2 #{arch}-SDL2_image #{arch}-SDL2_mixer #{arch}-SDL2_ttf"
+  run_cmd "pacman -S --noconfirm #{arch}-SDL2 #{arch}-SDL2_image #{arch}-SDL2_mixer #{arch}-SDL2_ttf #{arch}-glew"
 
   # Clean out files for current architecture
   windows_dir = "#{tmp_dir}/../windows"
@@ -349,10 +353,13 @@ task :assemble_windows_libs => [:set_tmp_dir, :update_mingw_packages, :build_mru
   # Location where pacman installs MinGW libraries
   # !!! Use UCRT for Ruby 3.1+ !!!
   if ucrt
-    pacman_lib_dir = "C:/Ruby31-x64/msys64/ucrt64/lib"
+    pacman_dir = "C:/Ruby31-x64/msys64/ucrt64"
   else
-    pacman_lib_dir = "C:/Ruby30-x64/msys64/mingw64/lib"
+    pacman_dir = "C:/Ruby30-x64/msys64/mingw64"
   end
+
+  pacman_include_dir = "#{pacman_dir}/include"
+  pacman_lib_dir = "#{pacman_dir}/lib"
 
   # Copy over SDL libraries
   FileUtils.cp [
@@ -397,9 +404,15 @@ task :assemble_windows_libs => [:set_tmp_dir, :update_mingw_packages, :build_mru
     "#{pacman_lib_dir}/libz.a",
     "#{pacman_lib_dir}/libstdc++.a",
     "#{pacman_lib_dir}/libssp.a",
-    "#{windows_dir}/glew/libglew32.a"
+    "#{pacman_lib_dir}/libglew32.a"
 
   ], lib_dir
+
+  # glew header
+  assets_include_dir = "#{tmp_dir}/../include"
+  FileUtils.rm_f "#{assets_include_dir}/GL/glew.h"
+  FileUtils.cp "#{pacman_include_dir}/GL/glew.h", windows_dir
+  FileUtils.cp "#{pacman_include_dir}/GL/glew.h", "#{assets_include_dir}/GL"
 
   # mruby
   mruby_build_dir = "#{tmp_dir}/mruby/build/host"
