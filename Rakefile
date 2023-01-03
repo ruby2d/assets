@@ -1,9 +1,9 @@
 # Library dependency versions — update these when new releases are available
-mruby_version     = '3.0.0'
-sdl_version       = '2.0.20'
-sdl_image_version = '2.0.5'
-sdl_mixer_version = '2.0.4'
-sdl_ttf_version   = '2.0.18'
+mruby_version     = '3.1.0'
+sdl_version       = '2.26.1'
+sdl_image_version = '2.6.2'
+sdl_mixer_version = '2.6.2'
+sdl_ttf_version   = '2.20.1'
 
 # Shared variables
 tmp_dir = nil
@@ -82,7 +82,7 @@ end
 desc "Download and extract libraries"
 task :download_extract_libs => :set_tmp_dir do
 
-  # Clean out tmp dir if already exists
+  # Clean out tmp dir if already exists, directories only (to avoid re-downloading .zips)
   FileUtils.rm_rf Dir.glob("#{tmp_dir}/*/")
 
   # Library URLs
@@ -138,9 +138,10 @@ task :assemble_includes => :download_extract_libs do
 
   print_task "Assembling includes..."
 
-  # Set and clean include directory
+  # Set and clean include directory, _except_ `GL/` which contains `glew.h` generated on Windows
   include_dir = "#{tmp_dir}/../include"
-  FileUtils.rm_rf Dir.glob("#{include_dir}/*")
+  FileUtils.mkdir_p include_dir
+  FileUtils.rm_rf(Dir.glob("#{include_dir}/*") - Dir.glob("#{include_dir}/GL"))
 
   # mruby
   FileUtils.cp_r 'mruby/include/.', "#{include_dir}"
@@ -149,12 +150,8 @@ task :assemble_includes => :download_extract_libs do
   FileUtils.mkdir_p "#{include_dir}/SDL2"
   FileUtils.cp Dir.glob('SDL/include/*.h'), "#{include_dir}/SDL2"
   FileUtils.cp 'SDL_image/SDL_image.h', "#{include_dir}/SDL2"
-  FileUtils.cp 'SDL_mixer/SDL_mixer.h', "#{include_dir}/SDL2"
+  FileUtils.cp 'SDL_mixer/include/SDL_mixer.h', "#{include_dir}/SDL2"
   FileUtils.cp 'SDL_ttf/SDL_ttf.h', "#{include_dir}/SDL2"
-
-  # GLEW
-  FileUtils.mkdir_p "#{include_dir}/GL"
-  FileUtils.cp "#{tmp_dir}/../windows/glew.h", "#{include_dir}/GL"
 
   # ANGLE
   FileUtils.cp_r 'angle/include/GLES2', include_dir
@@ -208,17 +205,18 @@ task :assemble_macos_libs => [:set_tmp_dir, :build_mruby] do
   print_task "Building and assembling macOS libs..."
 
   # Graphite — Download and build static library
-  #   This SDL_ttf / HarfBuzz dependency has a bug in CMakeLists.txt which breaks
-  #   static builds. This script here clones the library, removes the line causing
-  #   the issue (see https://github.com/silnrsi/graphite/pull/54), and compiles
-  #   with CMake. Hopefully this PR gets merged and a new version cut so we can
-  #   get this library from Homebrew (like the others) and skip this workaround.
+  #   This SDL_ttf / HarfBuzz dependency has a bug in CMakeLists.txt which
+  #   breaks static builds. This script here clones the library, removes the
+  #   line causing the issue (see https://github.com/silnrsi/graphite/pull/54),
+  #   and compiles with CMake. Hopefully this PR gets merged and a new version
+  #   cut so we can get this library from Homebrew (like the others) and skip
+  #   this workaround.
   run_cmd "brew install cmake"
   FileUtils.rm_rf "#{tmp_dir}/graphite"
-  run_cmd "git clone --depth=1 https://github.com/silnrsi/graphite.git"
+  run_cmd "git clone https://github.com/silnrsi/graphite.git"
   Dir.chdir "#{tmp_dir}/graphite"
-  run_cmd "git checkout 425da3d08926b9cf321fc0014dfa979c24d2cf64"
-  run_cmd "sed -i '' 147d src/CMakeLists.txt"  # delete infected line 147
+  run_cmd "git checkout 2f45277584beae312f1f4eea2b8706c44a4ae8d2"
+  run_cmd "sed -i '' 128d src/CMakeLists.txt"  # delete infected line 128
 
   graphite_build_dir = "#{tmp_dir}/graphite/build"
   FileUtils.mkdir_p graphite_build_dir
@@ -227,7 +225,40 @@ task :assemble_macos_libs => [:set_tmp_dir, :build_mruby] do
   run_cmd "make"
 
   Dir.chdir tmp_dir
-  # End Graphite static build
+  ### End Graphite static build
+
+  # libavif — Download and build static library
+  #   The Homebrew formula doesn't currently create static libs, so have do do
+  #   this instead.
+  FileUtils.rm_rf "#{tmp_dir}/libavif"
+  run_cmd "git clone https://github.com/AOMediaCodec/libavif.git"
+  Dir.chdir "#{tmp_dir}/libavif"
+  run_cmd "git checkout tags/v0.11.1"
+
+  libavif_build_dir = "#{tmp_dir}/libavif/build"
+  FileUtils.mkdir_p libavif_build_dir
+  Dir.chdir libavif_build_dir
+  run_cmd "cmake .. -DBUILD_SHARED_LIBS=OFF"
+  run_cmd "make"
+
+  Dir.chdir tmp_dir
+  ### End libavif static build
+
+  # Highway — Download and build static library
+  #   The Homebrew formula doesn't currently create static libs, so have do do
+  #   this instead.
+  run_cmd "git clone https://github.com/google/highway.git"
+  Dir.chdir "#{tmp_dir}/highway"
+  run_cmd "git checkout tags/v1.0.2"
+
+  highway_build_dir = "#{tmp_dir}/highway/build_dir"
+  FileUtils.mkdir_p highway_build_dir
+  Dir.chdir highway_build_dir
+  run_cmd "cmake .. -DBUILD_SHARED_LIBS=OFF -DHWY_ENABLE_CONTRIB=OFF -DHWY_ENABLE_TESTS=OFF -DHWY_ENABLE_EXAMPLES=OFF"
+  run_cmd "make"
+
+  Dir.chdir tmp_dir
+  ### End Highway static build
 
   # Install SDL libs
   run_cmd "brew install sdl2 sdl2_image sdl2_mixer sdl2_ttf"
@@ -253,10 +284,16 @@ task :assemble_macos_libs => [:set_tmp_dir, :build_mruby] do
 
     # SDL_image
     Dir.glob("#{brew_cellar}/sdl2_image/*/lib/libSDL2_image.a")[0],
-    Dir.glob("#{brew_cellar}/jpeg/*/lib/libjpeg.a")[0],
-    Dir.glob("#{brew_cellar}/libpng/*/lib/libpng16.a")[0],
+    Dir.glob("#{brew_cellar}/jpeg-turbo/*/lib/libjpeg.a")[0],
+    Dir.glob("#{brew_cellar}/jpeg-xl/*/lib/libjxl.a")[0],
+    Dir.glob("#{brew_cellar}/brotli/*/lib/libbrotlicommon-static.a")[0],
+    Dir.glob("#{brew_cellar}/brotli/*/lib/libbrotlidec-static.a")[0],
+    Dir.glob("#{brew_cellar}/libpng/*/lib/libpng.a")[0],
     Dir.glob("#{brew_cellar}/libtiff/*/lib/libtiff.a")[0],
+    Dir.glob("#{brew_cellar}/zstd/*/lib/libzstd.a")[0],
     Dir.glob("#{brew_cellar}/webp/*/lib/libwebp.a")[0],
+    Dir.glob("#{tmp_dir}/libavif/build/libavif.a")[0],
+    Dir.glob("#{tmp_dir}/highway/build_dir/libhwy.a")[0],
 
     # SDL_mixer
     Dir.glob("#{brew_cellar}/sdl2_mixer/*/lib/libSDL2_mixer.a")[0],
@@ -308,6 +345,13 @@ task :assemble_macos_libs => [:set_tmp_dir, :build_mruby] do
                "Run on a #{other_arch} Mac to create universal libs"
   end
 
+  # Make files world readable on macOS, if needed
+  ['../windows/mingw-w64-ucrt-x86_64/bin',
+   '../windows/mingw-w64-ucrt-x86_64/lib',
+   '../windows/mingw-w64-x86_64/bin',
+   '../windows/mingw-w64-x86_64/lib'].each do |dir|
+    run_cmd("chmod -R +r #{dir}")
+  end
 end
 
 
@@ -370,9 +414,11 @@ task :assemble_windows_libs => [:set_tmp_dir, :build_mruby] do
     # SDL_image
     "#{pacman_lib_dir}/libSDL2_image.a",
     "#{pacman_lib_dir}/libjpeg.a",
-    "#{pacman_lib_dir}/libpng16.a",
+    "#{pacman_lib_dir}/libpng.a",
     "#{pacman_lib_dir}/libtiff.a",
     "#{pacman_lib_dir}/libwebp.a",
+    "#{pacman_lib_dir}/libjxl.a",
+    "#{pacman_lib_dir}/libhwy.a",
     "#{pacman_lib_dir}/libjbig.a",
     "#{pacman_lib_dir}/libdeflate.a",
     "#{pacman_lib_dir}/liblzma.a",
@@ -411,14 +457,13 @@ task :assemble_windows_libs => [:set_tmp_dir, :build_mruby] do
   # glew header
   assets_include_dir = "#{tmp_dir}/../include"
   FileUtils.rm_f "#{assets_include_dir}/GL/glew.h"
-  FileUtils.cp "#{pacman_include_dir}/GL/glew.h", windows_dir
+  FileUtils.mkdir_p "#{assets_include_dir}/GL"
   FileUtils.cp "#{pacman_include_dir}/GL/glew.h", "#{assets_include_dir}/GL"
 
   # mruby
   mruby_build_dir = "#{tmp_dir}/mruby/build/host"
   FileUtils.cp "#{mruby_build_dir}/bin/mrbc.exe", bin_dir
   FileUtils.cp "#{mruby_build_dir}/lib/libmruby.a", lib_dir
-
 end
 
 
@@ -428,14 +473,4 @@ desc "Remove Xcode user data"
 task :remove_xcode_user_data do
   print_task "Removing Xcode user data..."
   run_cmd "find ./xcode -name \"xcuserdata\" -type d -exec rm -r \"{}\" \\;"
-end
-
-
-desc "Uninstall all SDL2-related libs using Homebrew"
-task :uninstall_sdl_homebrew do
-  run_cmd 'brew uninstall --force --ignore-dependencies '\
-    'jpeg libpng libtiff giflib webp '\
-    'libogg flac libmodplug libvorbis mpg123 '\
-    'freetype cairo graphite2 harfbuzz '\
-    'sdl2_ttf sdl2_mixer sdl2_image sdl2'
 end
