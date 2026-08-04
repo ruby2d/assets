@@ -2,33 +2,95 @@
 
 ## Contents
 
-- [`include/`](include) — C include headers for dependencies
-- [`macos/`](macos) — macOS libraries
-- [`mruby/`](mruby) — mruby build config files
+- [`platform/`](platform) — Platform-specific headers and pre-built static libraries
+  - [`include/`](platform/include) — C headers for SDL3 and mruby, shared across all targets
+  - `macos-arm64/`, `windows-x86_64-mingw-ucrt/`, etc. — Compiled static libraries and binaries, organized by `{os}-{arch}/` (or `{os}-{arch}-{toolchain}/` on Windows)
+  - [`wasm/`](platform/wasm) — Static libraries for the WASM (Emscripten) target (`lib/` only — no host binaries)
+- [`sources/`](sources) — Dependency source repos (cloned by `rake`, gitignored)
+- [`build/`](build) — CMake build artifacts, organized by target ID (e.g. `macos-arm64`)
+- [`build_support/`](build_support) — CMake and mruby build configuration files
+- [`resources/`](resources) — Static assets bundled with the gem
+  - [`fonts/`](resources/fonts), [`icons/`](resources/icons), [`spritesheets/`](resources/spritesheets), and [`web/`](resources/web) (the HTML template for the web build)
 - [`test_media/`](test_media) — Media files (images, sounds, etc.) for tests
-- [`wasm/`](wasm) — [WebAssembly](https://webassembly.org) libraries and resources
-- [`windows/`](windows) — [MinGW](https://en.wikipedia.org/wiki/MinGW) and MSYS2 (Windows) libraries
-- [`xcode/`](xcode) — Xcode projects for iOS and tvOS
-  - iOS and tvOS frameworks from [`mruby-frameworks`](https://github.com/ruby2d/mruby-frameworks)
-- [`app.icns`](app.icns) — The [Ruby 2D logo](https://github.com/ruby2d/logo) icon
+- [`target.rb`](target.rb) — Host OS/arch/toolchain detection and path resolution (used by the Rakefile and build configs)
+- [`deps.yaml`](deps.yaml) — Pinned dependency versions, updated by `rake update`
 
-## Updating
+## Prerequisites
 
-### Prerequisites
+- [CMake](https://cmake.org) — required to build SDL3 libraries
+- [Ruby](https://www.ruby-lang.org) and [Rake](https://ruby.github.io/rake/) — required to run build tasks
+- [Emscripten](https://emscripten.org) — required for WASM builds only
 
-On macOS, if you have existing Homebrew packages compiled or bottled from a previous OS version or Xcode SDK, rebuild / reinstall using the following:
+**On Windows**, we recommend installing Ruby using the [RubyInstaller for Windows](https://rubyinstaller.org) and downloading the Ruby+Devkit versions. This has been tested with version 4.0.5-1 (arm and x64). `git` and `cmake` aren't installed by default — the build tasks check for them up front and offer to install them for you via MSYS2's `pacman`. To install them yourself instead, run `pacman -S` with the packages for your architecture:
+- For x86_64 systems, `git mingw-w64-ucrt-x86_64-cmake`
+- For ARM64 systems, `git mingw-w64-clang-aarch64-cmake`
+
+## Building
+
+Clone this repo, then run:
 
 ```sh
-brew list | xargs brew reinstall
+rake
 ```
 
-On Windows with MinGW, if the terminal exits when running `rake update`, just run again (it's running the MSYS2 core system upgrade and needs to restart to finish, that's all).
+With no arguments, `rake` cleans the current target and builds everything from source. It prints what it will do and prompts before continuing, then:
 
-### To update and rebuild all dependencies:
+1. Clones any missing SDL3 and mruby sources at the pinned version tags in [`deps.yaml`](deps.yaml) — existing sources are left as-is, and it does not run `update`
+2. Builds everything with CMake / mruby's build system
+3. Copies headers to `platform/include/` and static libraries to `platform/{os}-{arch}[-{toolchain}]/lib/`
 
-1. Update library versions in the [`Rakefile`](Rakefile)
-2. Clone this repo and run `rake update` on the following platforms:
-  - Windows 10 or higher (Ruby should be installed using [these instructions](https://www.ruby2d.com/learn/windows))
-  - macOS 12 or higher — Intel / x86_64
-  - macOS 12 or higher — Apple silicon / arm64
-3. Commit or save changes to this repo after running on each platform. This is especially important for macOS, where univeral libraries are created (e.g. new x86_64 libs should be present to merge with arm64 to create universal versions)
+If [Emscripten](https://emscripten.org) is available on your `PATH`, the WASM libraries are built too (see [`rake wasm`](#individual-tasks)); otherwise that step is skipped with a notice. Run `rake wasm` directly to build them explicitly.
+
+To build without the confirmation prompt, run `rake build` directly. Unlike `rake`, it re-clones any source whose pinned tag in [`deps.yaml`](deps.yaml) has changed.
+
+### Individual tasks
+
+```sh
+rake sdl          # Download and build SDL libraries
+rake mruby        # Download and build mruby
+rake wasm         # Download and build all WASM libraries (SDL + mruby)
+```
+
+To remove the current target's build artifacts (plus WASM):
+
+```sh
+rake clean
+```
+
+To start completely fresh — remove **every** target's build artifacts, the WASM libraries, and all downloaded sources (re-cloned on the next build):
+
+```sh
+rake clean:all
+```
+
+### Testing SDL
+
+```sh
+rake sdl:test     # Compile and run sdl_test.c against the built libraries
+```
+
+Note: `sdl:test` opens a window and plays audio, so it needs a graphical/audio environment — it won't run headless (e.g. in CI).
+
+## Updating dependencies
+
+All dependency versions are pinned by tag in [`deps.yaml`](deps.yaml). To check for and apply updates:
+
+```sh
+rake update
+```
+
+This will check each dependency's remote for newer release tags, show what's available, and ask for confirmation before updating. Pinned tags in `deps.yaml` are updated automatically.
+
+After updating, run `rake build` to rebuild with the updated sources.
+
+## License
+
+The contents of this repo are released under the [MIT License](LICENSE.md), unless otherwise specified. Third-party files retain their original licenses, including:
+
+- [`platform/include/SDL3*`](platform/include) and the built `libSDL3*` libraries — [SDL3](https://www.libsdl.org), [zlib license](https://www.libsdl.org/license.php)
+- [`platform/include/mruby*`](platform/include) and the built `libmruby` libraries — [mruby](https://mruby.org), [MIT License](https://github.com/mruby/mruby/blob/master/LICENSE)
+- [`platform/wasm/lib/`](platform/wasm/lib) — also includes libraries bundled by SDL_image, SDL_mixer, and SDL_ttf (FreeType, HarfBuzz, libpng, zlib, Ogg/Vorbis, FLAC, PlutoVG/PlutoSVG), each under its own license
+- [`resources/fonts/`](resources/fonts) — [Outfit](resources/fonts/outfit/OFL.txt) and [Roboto Mono](resources/fonts/roboto_mono/OFL.txt), [SIL Open Font License 1.1](https://openfontlicense.org)
+- [`resources/spritesheets/`](resources/spritesheets) — Kenney's New Platformer Pack, [CC0](resources/spritesheets/License.txt)
+
+See the license file included alongside each of the above, or the upstream project, for full terms.

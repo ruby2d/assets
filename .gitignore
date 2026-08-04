@@ -1,2 +1,3 @@
-tmp/
-xcuserdata/
+.ruby-lsp/
+build/*
+sources/*

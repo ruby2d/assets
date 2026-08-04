@@ -1,0 +1,16 @@
+---
+SDL:
+  url: https://github.com/libsdl-org/SDL.git
+  tag: release-3.4.14
+SDL_image:
+  url: https://github.com/libsdl-org/SDL_image.git
+  tag: release-3.4.4
+SDL_mixer:
+  url: https://github.com/libsdl-org/SDL_mixer.git
+  tag: release-3.2.4
+SDL_ttf:
+  url: https://github.com/libsdl-org/SDL_ttf.git
+  tag: release-3.2.2
+mruby:
+  url: https://github.com/mruby/mruby.git
+  tag: 4.0.0
